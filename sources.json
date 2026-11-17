@@ -1,0 +1,51 @@
+[
+  {
+    "id": "kraken-mount",
+    "repo": "quer3q/kraken-mount",
+    "name": "Kraken Mount",
+    "pattern": "kraken-mount\\.elf",
+    "prerelease": false
+  },
+  {
+    "id": "shadowkraken",
+    "repo": "MNeroba/ShadowKraken",
+    "name": "ShadowKraken",
+    "pattern": "shadowkraken\\.elf",
+    "prerelease": true
+  },
+  {
+    "id": "shadowmountplus",
+    "repo": "drakmor/ShadowMountPlus",
+    "name": "ShadowMountPlus",
+    "pattern": "shadowmountplus(?:[-_][a-z0-9.]+)*\\.elf",
+    "prerelease": true
+  },
+  {
+    "id": "alembic",
+    "repo": "fthdgn-gh/Alembic",
+    "name": "Alembic Engine",
+    "pattern": "alembic(?:[-_][a-z0-9.]+)*\\.elf",
+    "prerelease": false
+  },
+  {
+    "id": "ps5upload",
+    "repo": "phantomptr/ps5upload",
+    "name": "ps5upload",
+    "pattern": "ps5upload(?:[-_][a-z0-9.]+)*\\.elf",
+    "prerelease": false
+  },
+  {
+    "id": "nanodns",
+    "repo": "drakmor/nanoDNS",
+    "name": "nanoDNS",
+    "pattern": "(?:ps5[-_])?nanodns(?:[-_][a-z0-9.]+)*\\.elf",
+    "prerelease": false
+  },
+  {
+    "id": "kstuff-lite",
+    "repo": "EchoStretch/kstuff-lite",
+    "name": "kstuff-lite",
+    "pattern": "kstuff(?:[-_]lite)?(?:[-_]v?[0-9.]+)*\\.elf",
+    "prerelease": false
+  }
+]
