@@ -17,4 +17,7 @@ int pf_install_update(int rootfd,const unsigned char *archive,size_t archive_n,c
 int pf_backup(int rootfd,const char *id,char snapshot[65]);
 int pf_backup_verify(int rootfd,const char *id,const char *snapshot);
 int pf_rollback(int rootfd,const char *id,const char *snapshot);
+/* 0 deactivated/removed; 1 deactivated with incomplete cleanup; -2 not active.
+ * -3 means pointer durability uncertain, and no cleanup is performed. */
+int pf_uninstall(int rootfd,const char *id,int keep_config,size_t *removed);
 #endif
