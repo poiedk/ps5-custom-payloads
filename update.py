@@ -46,9 +46,9 @@ def select(s, releases):
         if not url.lower().startswith((host+s['repo']+'/releases/download/').lower()):
             raise ValueError('unexpected download URL')
         checksum=digest[7:].lower()
-        if a['name'].lower().endswith('.zip'):
+        if a['name'].lower().endswith(('.zip','.tar.gz','.tgz')):
             if not s.get('archive'):
-                raise ValueError('ZIP requires explicit archive policy')
+                raise ValueError('archive requires explicit archive policy')
             path,checksum=prepare_zip(s,url,checksum,ROOT)
             url='https://raw.githubusercontent.com/poiedk/ps5-custom-payloads/main/'+path
         elif not a['name'].lower().endswith('.elf'):
