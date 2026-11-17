@@ -8,6 +8,8 @@ import urllib.request
 import zipfile
 from urllib.parse import urlsplit
 from payloadforge.archive import extract_elf, safe_name, MAX_ARCHIVE
+from payloadforge.tar_archive import extract_tar_elf
+from payloadforge.package_type import detect_package
 
 def download_zip(url):
     if urlsplit(url).scheme!="https":
@@ -33,15 +35,25 @@ def prepare_zip(source, asset_url, digest, root, download=download_zip):
     if not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,79}",source["id"]):
         raise ValueError("invalid catalog ID")
     raw=download(asset_url)
-    elf,sha=extract_elf(raw,digest,member)
-    # Never silently discard companion files. Documentation-only extras are permitted.
-    with zipfile.ZipFile(io.BytesIO(raw)) as z:
-        for i in z.infolist():
-            if i.is_dir() or i.filename==member:
-                continue
-            name=safe_name(i.filename).rsplit("/",1)[-1]
-            if not re.fullmatch(r"(?:README|LICEN[CS]E|COPYING|NOTICE|CHANGELOG|AUTHORS)(?:\.(?:txt|md|rst))?",name,re.I):
-                raise ValueError("ZIP contains possible companion files; bundle review required")
+    if not isinstance(raw,bytes) or len(raw)>MAX_ARCHIVE or hashlib.sha256(raw).hexdigest()!=digest.lower():
+        raise ValueError("archive size or digest mismatch")
+    fmt,kind=detect_package(raw)
+    path=urlsplit(asset_url).path.lower()
+    expected="tar.gz" if path.endswith((".tar.gz",".tgz")) else "zip"
+    if fmt!=expected or kind!="bundle":
+        raise ValueError("archive format mismatch or manifest bundle")
+    if fmt=="tar.gz":
+        elf,sha=extract_tar_elf(raw,digest,member,docs_only=True)
+    else:
+        elf,sha=extract_elf(raw,digest,member)
+        # Never silently discard companion files.
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            for i in z.infolist():
+                if i.is_dir() or i.filename==member:
+                    continue
+                name=safe_name(i.filename).rsplit("/",1)[-1]
+                if not re.fullmatch(r"(?:README|LICEN[CS]E|COPYING|NOTICE|CHANGELOG|AUTHORS)(?:\.(?:txt|md|rst))?",name,re.I):
+                    raise ValueError("ZIP contains possible companion files; bundle review required")
     directory=root/"generated"/source["id"]
     directory.mkdir(parents=True,exist_ok=True)
     path=directory/(sha+".elf")
