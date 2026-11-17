@@ -141,6 +141,18 @@ static int lower_hash(const char *hash){
  for(size_t i=0;i<64;i++)if(hash[i]>='A'&&hash[i]<='F')return 0;
  return 1;
 }
+/* Return 0 absent, 1 active, 2 uninstalled/drop, 3 uninstalled/keep, -1 malformed.
+ * Uninstalled marker contains the verified snapshot ID, not a generation path. */
+static int read_marker(int app,char id[65]){
+ int present=exists_at(app,"CURRENT");if(present<=0)return present;
+ size_t n;unsigned char *p=read_file(app,"CURRENT",81,&n);if(!p)return -1;
+ int rc=-1;
+ if(n==64&&lower_hash((const char *)p)){memcpy(id,p,65);rc=1;}
+ else if(n==81&&!memcmp(p,"uninstalled:",12)&&(!memcmp(p+76,":keep",5)||!memcmp(p+76,":drop",5))){
+  memcpy(id,p+12,64);id[64]=0;if(lower_hash(id))rc=p[77]=='k'?3:2;
+ }
+ free(p);return rc;
+}
 static void snapshot_id(const char *generation,const char *registry_hash,const char *ah,const char *mh,char out[65]){
  char key[256];memcpy(key,generation,64);memcpy(key+64,registry_hash,64);
  memcpy(key+128,ah,64);memcpy(key+192,mh,64);
@@ -266,7 +278,8 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  const unsigned char *manifest,size_t mn,const char *mh,int update){
  int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,stage=-1,data=-1;
  pf_file *files=NULL,*old=NULL,*check=NULL;pf_zip_entry *entries=NULL;
- int previous=-1,prior_data=-1;unsigned char *effective=NULL;size_t effective_n=0;
+ int previous=-1,prior_data=-1,backups=-1,source_snapshot=-1;unsigned char *effective=NULL;size_t effective_n=0;
+ int merge=update,reinstall=0;
  pf_manifest prior={0};char current_id[65]={0};
  pf_manifest plan;size_t count=0;
  struct stat rootstat;
@@ -279,12 +292,12 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  lock=open_root_lock(root);if(lock<0)goto done;
  apps=dir_at(root,"apps",1);if(apps<0||fsync(root))goto done;
  app=dir_at(apps,plan.id,1);if(app<0||fsync(apps))goto done;
- int current=exists_at(app,"CURRENT");
- if(current<0||(!update&&current>0)||(update&&current==0)){rc=current>=0?-2:-1;goto done;}
+ int current=read_marker(app,current_id);
+ if(current<0||(!update&&current==1)||(update&&current!=1)){rc=current>=0?-2:-1;goto done;}
+ reinstall=current>=2;merge=update||current==3;
  gens=dir_at(app,"generations",1);if(gens<0||fsync(app))goto done;
  if(update){
   old=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*old));if(!old)goto done;
-  if(read_hash(app,"CURRENT",current_id)||!lower_hash(current_id))goto done;
   previous=dir_at(gens,current_id,0);if(previous<0||load_generation(previous,current_id,plan.id,&prior,old))goto done;
   if(!strcmp(prior.version,plan.version))goto done;
   prior_data=dir_at(previous,"data",0);if(prior_data<0)goto done;
@@ -302,9 +315,21 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
   }
   char backup[65];if(snapshot_locked(app,current_id,&prior,old,previous,prior_data,backup))goto done;
  }
+ if(current==3){
+  old=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*old));if(!old)goto done;
+  backups=dir_at(app,"backups",0);if(backups<0)goto done;
+  char source_gen[65];if(verify_snapshot(backups,plan.id,current_id,&prior,old,source_gen))goto done;
+  source_snapshot=dir_at(backups,current_id,0);if(source_snapshot<0)goto done;
+  prior_data=dir_at(source_snapshot,"data",0);if(prior_data<0)goto done;
+  for(size_t i=0;i<prior.count;i++)if(old[i].preserve){
+   int index=find_file(files,plan.count,old[i].path);
+   if(index>=0&&!files[index].preserve)goto done;
+   if(index<0){if(plan.count>=PF_ZIP_MAX_MEMBERS)goto done;files[plan.count++]=old[i];}
+  }
+ }
  /* Content-addressed initial generation; updates bind predecessor and manifest. */
  char generation[65],staging[80],pointer[80];
- if(update){
+ if(update||reinstall){
   char identity[192];memcpy(identity,ah,64);memcpy(identity+64,mh,64);memcpy(identity+128,current_id,64);
   pf_sha256_hex(identity,sizeof identity,generation);
  }else{memcpy(generation,ah,64);generation[64]=0;}
@@ -313,12 +338,12 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  if(exists_at(gens,generation)!=0||mkdirat(gens,staging,0700))goto done;
  stage=dir_at(gens,staging,0);if(stage<0)goto done;
  data=dir_at(stage,"data",1);if(data<0)goto done;
- if(!update){
+ if(!merge&&!reinstall){
   for(size_t i=0;i<count;i++)if(write_member(data,entries+i))goto done;
  }else{
   size_t total=0;
   for(size_t i=0;i<plan.count;i++){
-   pf_file *f=files+i;int index=find_file(old,prior.count,f->path);
+   pf_file *f=files+i;int index=merge?find_file(old,prior.count,f->path):-1;
    if(index>=0&&old[index].preserve){
     size_t n;unsigned char *raw=read_member(prior_data,f->path,&n);if(!raw)goto done;
     if(n>PF_ZIP_MAX_TOTAL-total){free(raw);goto done;}
@@ -343,6 +368,8 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  rc=fsync(app)?-3:0;
  done:
  if(prior_data>=0)close(prior_data);
+ if(source_snapshot>=0)close(source_snapshot);
+ if(backups>=0)close(backups);
  if(previous>=0)close(previous);
  if(data>=0)close(data);
  if(stage>=0)close(stage);
@@ -424,4 +451,37 @@ int pf_rollback(int root,const char *id,const char *snapshot){
  if(apps>=0)close(apps);
  if(lock>=0)close(lock);
  free(effective);free(manifest);free(check);free(old);free(files);return rc;
+}
+
+/* Logical deactivation precedes registry-only cleanup. No recursive removal;
+ * unregistered data, old generations and snapshots remain. */
+int pf_uninstall(int root,const char *id,int keep,size_t *removed){
+ if(!removed)return -1;
+ *removed=0;
+ if(!id||!pf_id_valid(id,strlen(id))||(keep!=0&&keep!=1))return -1;
+ int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,gen=-1,data=-1;
+ pf_file *files=NULL;pf_manifest plan;char current[65],snapshot[65],marker[82],pointer[80];
+ lock=open_root_lock(root);if(lock<0)goto done;
+ apps=dir_at(root,"apps",0);if(apps<0)goto done;
+ app=dir_at(apps,id,0);if(app<0)goto done;
+ if(read_marker(app,current)!=1){rc=-2;goto done;}
+ gens=dir_at(app,"generations",0);if(gens<0)goto done;
+ gen=dir_at(gens,current,0);if(gen<0)goto done;
+ files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));if(!files||load_generation(gen,current,id,&plan,files))goto done;
+ data=dir_at(gen,"data",0);if(data<0||snapshot_locked(app,current,&plan,files,gen,data,snapshot))goto done;
+ if(snprintf(marker,sizeof marker,"uninstalled:%s:%s",snapshot,keep?"keep":"drop")!=81||
+    snprintf(pointer,sizeof pointer,".uninstall-%s",snapshot)<0)goto done;
+ if(new_file(app,pointer,marker,81)||renameat(app,pointer,app,"CURRENT"))goto done;
+ if(fsync(app)){rc=-3;goto done;}
+ rc=0;
+ for(size_t i=0;i<plan.count;i++){
+  char name[1025];int parent=file_parent(data,files[i].path,name,0);
+  if(parent<0){rc=1;continue;}
+  struct stat st;
+  if(fstatat(parent,name,&st,AT_SYMLINK_NOFOLLOW)||!S_ISREG(st.st_mode)||st.st_uid!=geteuid()||st.st_nlink!=1||unlinkat(parent,name,0))rc=1;
+  else{(*removed)++;if(fsync(parent))rc=1;}
+  close(parent);
+ }
+ done:if(data>=0)close(data);if(gen>=0)close(gen);if(gens>=0)close(gens);if(app>=0)close(app);if(apps>=0)close(apps);if(lock>=0)close(lock);
+ free(files);return rc;
 }
