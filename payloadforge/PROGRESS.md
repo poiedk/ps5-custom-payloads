@@ -20,3 +20,10 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Bounded gzip decompression, exact ELF selection, special-file and path rejection, limits and documentation-only policy.
 - 7Z deferred; additional parser dependency and native-port risk outweigh benefit for v1.
 - TAR integration with updater/content detector to follow in Stage 3; no live TAR source.
+
+## Stage 3 — content detection and TAR routing
+- CI verified: [run 44163136536](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44163136536), commit 5989f1c.
+- Actual log: `Ran 70 tests in 0.034s` / `OK`.
+- Detect ELF, ZIP, TAR.GZ and root manifest marker from bytes; classification is not integrity verification.
+- TAR.GZ integrated into opt-in updater; mismatched content and manifest bundles rejected from standalone publishing.
+- Host-only fixtures; no live source or hardware test.
