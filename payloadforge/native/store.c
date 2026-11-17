@@ -136,6 +136,144 @@ static int load_generation(int gen,const char *generation,const char *id,pf_mani
 }
 
 
+/* Snapshots are independently verified copies, not mutable generation aliases. */
+static int lower_hash_string(const char *s){
+ if(!s||strlen(s)!=64||!pf_sha_valid(s,64))return 0;
+ for(size_t i=0;i<64;i++)if(s[i]>='A'&&s[i]<='F')return 0;
+ return 1;
+}
+static void snapshot_identity(const char *source,const char *ah,const char *mh,const char *rh,char out[65]){
+ char identity[256];
+ memcpy(identity,source,64);memcpy(identity+64,ah,64);
+ memcpy(identity+128,mh,64);memcpy(identity+192,rh,64);
+ pf_sha256_hex(identity,sizeof identity,out);
+}
+static int snapshot_verify_fd(int fd,const char *id,const char *expected){
+ int rc=-1,data=-1;char source[65],ah[65],mh[65],rh[65],actual[65];size_t mn=0,rn=0,total=0;
+ unsigned char *manifest=NULL,*record=NULL;
+ pf_file *files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));pf_manifest upstream,plan;
+ if(!files)goto done;
+ if(read_hash(fd,"source.generation",source)||read_hash(fd,"archive.sha256",ah)||
+    read_hash(fd,"manifest.sha256",mh)||read_hash(fd,"registry.sha256",rh))goto done;
+ if(!lower_hash_string(source)||!lower_hash_string(ah)||!lower_hash_string(mh)||!lower_hash_string(rh))goto done;
+ snapshot_identity(source,ah,mh,rh,actual);if(strcmp(actual,expected))goto done;
+ manifest=read_file(fd,"manifest.json",PF_MANIFEST_LIMIT,&mn);
+ record=read_file(fd,"registry.json",PF_MANIFEST_LIMIT,&rn);
+ if(!manifest||!record||!pf_sha256_matches(manifest,mn,mh)||!pf_sha256_matches(record,rn,rh))goto done;
+ if(pf_manifest_parse(manifest,mn,&upstream,files,PF_ZIP_MAX_MEMBERS)||strcmp(upstream.id,id))goto done;
+ if(pf_manifest_parse(record,rn,&plan,files,PF_ZIP_MAX_MEMBERS)||strcmp(plan.id,id)||strcmp(plan.version,upstream.version))goto done;
+ data=dir_at(fd,"data",0);if(data<0)goto done;
+ for(size_t i=0;i<plan.count;i++){
+  size_t n=0;unsigned char *raw=read_member(data,files[i].path,&n);
+  if(!raw)goto done;
+  int ok=n==files[i].size&&n<=PF_ZIP_MAX_TOTAL-total&&pf_sha256_matches(raw,n,files[i].sha256);
+  free(raw);if(!ok)goto done;total+=n;
+ }
+ rc=0;
+ done:
+ if(data>=0)close(data);
+ free(files);free(manifest);free(record);return rc;
+}
+static int snapshot_generation(int app,int gen,int prior_data,const char *source,const pf_manifest *plan,const pf_file *original,char out[65]){
+ int rc=-1,backups=-1,stage=-1,data=-1;
+ size_t total=0,mn=0,rn=0;unsigned char *manifest=NULL,*record=NULL;
+ pf_file *files=NULL;char ah[65],mh[65],rh[65],name[65],staging[80];
+ out[0]=0;
+ if(!lower_hash_string(source))goto done;
+ files=calloc(plan->count,sizeof(*files));if(!files)goto done;
+ memcpy(files,original,plan->count*sizeof(*files));
+ if(read_hash(gen,"archive.sha256",ah)||read_hash(gen,"manifest.sha256",mh)||!lower_hash_string(ah)||!lower_hash_string(mh))goto done;
+ manifest=read_file(gen,"manifest.json",PF_MANIFEST_LIMIT,&mn);
+ if(!manifest||!pf_sha256_matches(manifest,mn,mh))goto done;
+ /* Capture actual config bytes and immutable hashes in a canonical registry. */
+ for(size_t i=0;i<plan->count;i++){
+  size_t n=0;unsigned char *raw=read_member(prior_data,files[i].path,&n);
+  if(!raw)goto done;
+  int ok=n<=PF_ZIP_MAX_TOTAL-total&&(files[i].preserve||(n==files[i].size&&pf_sha256_matches(raw,n,files[i].sha256)));
+  if(ok){files[i].size=n;pf_sha256_hex(raw,n,files[i].sha256);total+=n;}
+  free(raw);if(!ok)goto done;
+ }
+ record=registry(plan,files,plan->count,&rn);if(!record)goto done;
+ pf_sha256_hex(record,rn,rh);snapshot_identity(source,ah,mh,rh,name);
+ backups=dir_at(app,"backups",1);if(backups<0||fsync(app))goto done;
+ int exists=exists_at(backups,name);
+ if(exists<0)goto done;
+ if(exists){
+  int prior=dir_at(backups,name,0);if(prior<0)goto done;
+  int ok=snapshot_verify_fd(prior,plan->id,name);close(prior);
+  if(ok)goto done;
+  memcpy(out,name,65);rc=0;goto done;
+ }
+ if(snprintf(staging,sizeof staging,".stage-%s",name)<0||mkdirat(backups,staging,0700))goto done;
+ stage=dir_at(backups,staging,0);if(stage<0)goto done;
+ data=dir_at(stage,"data",1);if(data<0)goto done;
+ /* Re-read and match captured hashes; a change during backup aborts. */
+ for(size_t i=0;i<plan->count;i++){
+  size_t n=0;unsigned char *raw=read_member(prior_data,files[i].path,&n);
+  if(!raw)goto done;
+  int ok=n==files[i].size&&pf_sha256_matches(raw,n,files[i].sha256)&&!put_data(data,files+i,raw,n);
+  free(raw);if(!ok)goto done;
+ }
+ if(fsync(data)||new_file(stage,"source.generation",source,64)||new_file(stage,"manifest.json",manifest,mn)||
+    new_file(stage,"manifest.sha256",mh,64)||new_file(stage,"archive.sha256",ah,64)||
+    new_file(stage,"registry.json",record,rn)||new_file(stage,"registry.sha256",rh,64)||fsync(stage))goto done;
+ if(snapshot_verify_fd(stage,plan->id,name)||renameat(backups,staging,backups,name)||fsync(backups))goto done;
+ memcpy(out,name,65);rc=0;
+ done:
+ if(data>=0)close(data);
+ if(stage>=0)close(stage);
+ if(backups>=0)close(backups);
+ free(files);free(manifest);free(record);return rc;
+}
+static int valid_root(int root){
+ struct stat s;
+ return !fstat(root,&s)&&S_ISDIR(s.st_mode)&&s.st_uid==geteuid()&&!(s.st_mode&0077);
+}
+int pf_backup(int root,const char *id,char out[65]){
+ if(!out)return -1;
+ out[0]=0;
+ if(!id||!pf_id_valid(id,strlen(id))||!valid_root(root))return -1;
+ int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,gen=-1,data=-1;
+ char current[65];pf_manifest plan;pf_file *files=NULL;
+ lock=openat(root,".lock",O_RDWR|O_CREAT|O_NOFOLLOW|O_CLOEXEC|O_NONBLOCK,0600);
+ if(lock<0||!is_regular(lock)||lock_exclusive(lock))goto done;
+ apps=dir_at(root,"apps",0);if(apps<0)goto done;
+ app=dir_at(apps,id,0);if(app<0)goto done;
+ if(read_hash(app,"CURRENT",current)||!lower_hash_string(current))goto done;
+ gens=dir_at(app,"generations",0);if(gens<0)goto done;
+ gen=dir_at(gens,current,0);if(gen<0)goto done;
+ files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));
+ if(!files||load_generation(gen,current,id,&plan,files))goto done;
+ data=dir_at(gen,"data",0);if(data<0)goto done;
+ rc=snapshot_generation(app,gen,data,current,&plan,files,out);
+ done:
+ if(data>=0)close(data);
+ if(gen>=0)close(gen);
+ if(gens>=0)close(gens);
+ if(app>=0)close(app);
+ if(apps>=0)close(apps);
+ if(lock>=0)close(lock);
+ free(files);return rc;
+}
+int pf_backup_verify(int root,const char *id,const char *snapshot){
+ if(!id||!pf_id_valid(id,strlen(id))||!lower_hash_string(snapshot)||!valid_root(root))return -1;
+ int rc=-1,lock=-1,apps=-1,app=-1,backups=-1,fd=-1;
+ lock=openat(root,".lock",O_RDWR|O_CREAT|O_NOFOLLOW|O_CLOEXEC|O_NONBLOCK,0600);
+ if(lock<0||!is_regular(lock)||lock_exclusive(lock))goto done;
+ apps=dir_at(root,"apps",0);if(apps<0)goto done;
+ app=dir_at(apps,id,0);if(app<0)goto done;
+ backups=dir_at(app,"backups",0);if(backups<0)goto done;
+ fd=dir_at(backups,snapshot,0);if(fd<0)goto done;
+ rc=snapshot_verify_fd(fd,id,snapshot);
+ done:
+ if(fd>=0)close(fd);
+ if(backups>=0)close(backups);
+ if(app>=0)close(app);
+ if(apps>=0)close(apps);
+ if(lock>=0)close(lock);
+ return rc;
+}
+
 /* Failed staging directories are deliberately retained for explicit inspection.
  * A partial stage can never become active; no recursive deletion is performed.
  */
@@ -178,6 +316,8 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
     if(index<0){if(plan.count>=PF_ZIP_MAX_MEMBERS)goto done;files[plan.count++]=old[i];}
    }
   }
+  char snapshot[65];
+  if(snapshot_generation(app,previous,prior_data,current_id,&prior,old,snapshot))goto done;
  }
  /* Content-addressed initial generation; updates bind predecessor and manifest. */
  char generation[65],staging[80],pointer[80];
