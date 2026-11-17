@@ -1,5 +1,6 @@
 /* Read-only native smoke test. No package installation, filesystem or networking. */
 #include "core.h"
+#include "sha256.h"
 #include <stdio.h>
 #include <string.h>
 #define EXPECT(x) do { if (!(x)) { fprintf(stderr,"FAIL: %s\n",#x); return 1; } } while(0)
@@ -11,6 +12,8 @@ int main(void){
     EXPECT(pf_format_detect((const unsigned char *)"\x7f""ELF",4)==PF_ELF);
     EXPECT(pf_format_detect((const unsigned char *)"PK\x03\x04",4)==PF_ZIP);
     EXPECT(pf_format_detect((const unsigned char *)"\x1f\x8b",2)==PF_GZIP);
+    EXPECT(pf_sha256_matches("abc",3,"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"));
+    EXPECT(!pf_sha256_matches("abd",3,"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"));
     puts("PayloadForge native preflight: OK (read-only; not installer)");
     return 0;
 }
