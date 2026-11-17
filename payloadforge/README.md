@@ -10,7 +10,7 @@ PayloadForge complements PLDMGR by handling reviewed homebrew companion data. Or
 - Candidate provenance and duplicate guard; read-only companion catalog sidecar linked to unchanged explicit PLDMGR IDs. Sidecar intentionally empty pending source approval.
 
 ## Native status
-SDK v0.42 cross-compiles the **read-only preflight** ELF in CI. It only exercises C validation primitives and prints a smoke-test result. It is NOT a native installer. The full native archive/manifest/hash/transaction engine, PS5 local web daemon, native application layouts and hardware validation remain unimplemented. Do not use the preflight as an installer.
+SDK v0.42 cross-compiles the **read-only preflight** ELF in CI. It exercises C validation primitives and prints a smoke-test result. It is NOT a native installer. The v0.2 development sources now implement SHA-256, a strict ZIP_STORED reader, strict ASCII manifest parsing, exact bundle verification, and an initial-install-only private-root store. The initial store's native build gate is recorded in PROGRESS.md. Native compressed archives, nonempty dependency/conflict metadata, update/backup/rollback/uninstall, the PS5 local web daemon, approved application layouts, and hardware validation remain incomplete. Do not use the preflight as an installer.
 
 ## Host quick start
 From repository root (Python 3, POSIX/Linux; no PS5 required):
