@@ -71,6 +71,8 @@ jobs:
             payloadforge/native/sha256.h
             payloadforge/native/zip.c
             payloadforge/native/zip.h
+            payloadforge/native/manifest.c
+            payloadforge/native/manifest.h
             payloadforge/native/preflight.c
             payloadforge/native/Makefile
             payloadforge/COPYING
