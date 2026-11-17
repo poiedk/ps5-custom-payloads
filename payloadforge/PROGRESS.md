@@ -85,3 +85,19 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - CI verified: [run 44167528195](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44167528195), commit ca2f009.
 - Actual log: `Ran 148 tests in 7.210s` / `OK`. Native read-only preflight also cross-compiled successfully.
 - Loopback-only authenticated JSON API, explicit confirmation, host/origin checks, size limits, logs, synthetic data-bundle transactions. Independent host work; native PS5 daemon not implemented.
+
+## Stage 13 — host-only web interface
+- CI verified: [run 44168094580](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44168094580), commit 5b20a22.
+- Actual log: `Ran 150 tests in 5.838s` / `OK`; native preflight host smoke OK and ELF cross-compile successful.
+- Host UI covers package list, preview/apply, version management, backups, rollback, uninstall, recovery and logs. Static delivery and JS syntax tested; full browser E2E and native UI unverified.
+
+## Stage 14 — companion catalog
+- CI verified: [run 44168437654](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44168437654), commit ea4ecb8.
+- Actual log: `Ran 160 tests in 5.605s` / `OK`. Both jobs passed.
+- Separate empty sidecar and read-only CLI join; actual catalog regression confirms no changed IDs. Native integration not implemented.
+- Discovery automation was successfully retrieved via peek and updated to staged review/green-CI policy; schedule unchanged. No unverified source added.
+
+## Stages 15–16 — planned hardware gate and host preview
+- HUMAN_TODO.md contains the hardware test plan; no PS5 test executed.
+- RC.md describes 0.1.0-alpha host preview and separate read-only native preflight. No full installer RC or stable release.
+- Fixture generator and tests committed; host candidate artifact workflow configured in dde33dd. Final result pending verification.
