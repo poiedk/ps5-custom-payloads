@@ -141,5 +141,18 @@
     "checksum": "9252b95bdf019f83628e454d03c15709fd2a59abf1f218e3d02f141eae1e9a19",
     "source": "https://github.com/StonedModder/Ghostcontrol-PS5-USB-Controller-Patcher/releases",
     "description": "Verify firmware compatibility before use."
+  },
+  {
+    "id": "anypad",
+    "name": "AnyPad",
+    "filename": "anypad.elf",
+    "url": "https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases/download/v0.9.5-beta/AnyPad-PS5-0.9.5-beta.elf",
+    "source_direct": "https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases/download/v0.9.5-beta/AnyPad-PS5-0.9.5-beta.elf",
+    "version": "v0.9.5-beta",
+    "last_update": "2026-10-14",
+    "category": "Utilities & Tools",
+    "checksum": "08ebdc013810d2a54f879ac3033a969c62280dccfc2a1ea4a04b161b891db816",
+    "source": "https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases",
+    "description": "Verify firmware compatibility before use."
   }
 ]
