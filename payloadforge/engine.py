@@ -72,11 +72,27 @@ class Engine:
         if not isinstance(app,str) or not ID.fullmatch(app):
             raise ValueError("invalid package id")
         return directory(directory(self.root/"apps",create)/app,create)
-    def _pointer(self,app):
-        try: name=regular(app/"CURRENT",64).decode("ascii").strip()
+    def _marker(self,app):
+        try: name=regular(app/"CURRENT",128).decode("ascii").strip()
         except FileNotFoundError:return None
-        if not GEN.fullmatch(name):raise ValueError("invalid generation pointer")
+        if not (GEN.fullmatch(name) or re.fullmatch(r"uninstalled:[a-f0-9]{32}:(keep|drop)",name)):
+            raise ValueError("invalid generation pointer")
         return name
+    def _pointer(self,app):
+        name=self._marker(app)
+        return name if name and GEN.fullmatch(name) else None
+    def _preserved_after_uninstall(self,app):
+        marker=self._marker(app)
+        if marker and marker.startswith("uninstalled:") and marker.endswith(":keep"):
+            _,name,_=marker.split(":")
+            _,files=self._read_snapshot(app,name)
+            return {p:(raw,policy) for p,(raw,policy) in files.items() if policy=="preserve"}
+        return {}
+    def _merge_config(self,files,prior):
+        for path,(data,policy) in prior.items():
+            if policy=="preserve":
+                if path in files and files[path][1]!="preserve":raise ValueError("cannot demote preserved configuration")
+                files[path]=(data,policy)
     def _generation(self,app,name):
         if not isinstance(name,str) or not GEN.fullmatch(name):
             raise ValueError("invalid generation")
@@ -177,7 +193,7 @@ class Engine:
                for path,(raw,policy) in sorted(files.items())]
         dependencies=list(dependencies);resources=list(resources);conflicts=list(conflicts)
         validate({"schema_version":3,"id":app.name,"version":version,"files":items,"dependencies":dependencies,"resources":resources,"conflicts":conflicts})
-        prior=self._pointer(app)
+        prior=self._marker(app)
         gens=directory(app/"generations",True)
         name=uuid.uuid4().hex;stage=gens/(".stage-"+name);final=gens/name
         stage.mkdir(mode=0o700)
@@ -217,11 +233,9 @@ class Engine:
             if current:
                 previous,base=self._state(app,current)
                 prior_files=self._read_state_files(previous,base)
-                for path,(data,policy) in prior_files.items():
-                    if policy=="preserve":
-                        if path in files and files[path][1]!="preserve":raise ValueError("cannot demote preserved configuration")
-                        files[path]=(data,policy)
+                self._merge_config(files,prior_files)
                 self._snapshot(app,previous,prior_files)
+            else:self._merge_config(files,self._preserved_after_uninstall(app))
             return self._publish(app,plan["version"],archive_sha256.lower(),files,plan["dependencies"],plan["resources"],plan["conflicts"])
     def rollback(self,app_id,snapshot_id):
         with self.locked():
@@ -231,12 +245,40 @@ class Engine:
             current=self._pointer(app)
             if current:
                 previous,base=self._state(app,current);prior_files=self._read_state_files(previous,base)
-                for path,(data,policy) in prior_files.items():
-                    if policy=="preserve":
-                        if path in files and files[path][1]!="preserve":raise ValueError("cannot demote preserved configuration")
-                        files[path]=(data,policy)
+                self._merge_config(files,prior_files)
                 self._snapshot(app,previous,prior_files)
+            else:self._merge_config(files,self._preserved_after_uninstall(app))
             return self._publish(app,target["version"],target["archive_sha256"],files,target.get("dependencies",[]),target.get("resources",[]),target.get("conflicts",[]))
+    def uninstall(self,app_id,*,preserve_config=True):
+        if type(preserve_config) is not bool:raise ValueError("invalid preserve option")
+        with self.locked():
+            app=self._app(app_id);current=self._pointer(app)
+            if not current:raise ValueError("not installed")
+            installed=self._installed();installed.pop(app_id)
+            validate_state(installed,{})
+            record,base=self._state(app,current)
+            files=self._read_state_files(record,base)
+            snapshot=self._snapshot(app,record,files)
+            marker="uninstalled:"+snapshot["snapshot"]+(":keep" if preserve_config else ":drop")
+            try:self._write_pointer(app,marker)
+            except Exception:
+                if self._marker(app)==marker:self._write_pointer(app,current)
+                raise
+            # Logical uninstall committed. Only registered files in this inactive
+            # generation may be removed. Backups and untracked data stay intact.
+            removed=[];errors=[]
+            for path in sorted(files):
+                try:
+                    p=within(base,path)
+                    p.unlink();removed.append(path)
+                    parent=p.parent
+                    while parent!=base:
+                        try:parent.rmdir()
+                        except OSError:break
+                        parent=parent.parent
+                except OSError as exc:errors.append(path+": "+str(exc))
+                except ValueError as exc:errors.append(path+": "+str(exc))
+            return {"id":app_id,"uninstalled":True,"snapshot":snapshot["snapshot"],"preserve_config":preserve_config,"removed":removed,"cleanup_errors":errors}
     def recovery_report(self,app_id):
         """Read-only crash inspection; no implicit deletion of generations."""
         with self.locked():
