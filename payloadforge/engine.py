@@ -101,7 +101,7 @@ class Engine:
             if total>MAX_TOTAL:raise ValueError("installed data too large")
             result[path]=(raw,f["policy"])
         return result
-    def _activate(self,app,generation):
+    def _write_pointer(self,app,generation):
         tmp=app/(".pointer-"+uuid.uuid4().hex)
         try:
             write_new(tmp,(generation+"\n").encode("ascii"))
@@ -109,6 +109,8 @@ class Engine:
             sync_dir(app)
         finally:
             tmp.unlink(missing_ok=True)
+    def _activate(self,app,generation):
+        self._write_pointer(app,generation)
     def _before_activate(self,app,generation):
         """Test hook; production implementation performs no action."""
     def _installed(self):
@@ -175,6 +177,7 @@ class Engine:
                for path,(raw,policy) in sorted(files.items())]
         dependencies=list(dependencies);resources=list(resources);conflicts=list(conflicts)
         validate({"schema_version":3,"id":app.name,"version":version,"files":items,"dependencies":dependencies,"resources":resources,"conflicts":conflicts})
+        prior=self._pointer(app)
         gens=directory(app/"generations",True)
         name=uuid.uuid4().hex;stage=gens/(".stage-"+name);final=gens/name
         stage.mkdir(mode=0o700)
@@ -188,9 +191,15 @@ class Engine:
             self._before_activate(app,name)
             self._activate(app,name)
         except Exception:
-            # Never remove an active generation; failed pointer durability is ambiguous.
             if stage.exists():shutil.rmtree(stage)
-            if final.exists() and self._pointer(app)!=name:shutil.rmtree(final)
+            try:
+                if self._pointer(app)==name:
+                    if prior is None:
+                        (app/"CURRENT").unlink();sync_dir(app)
+                    else:self._write_pointer(app,prior)
+                if final.exists() and self._pointer(app)!=name:shutil.rmtree(final)
+            except Exception as recovery:
+                raise RuntimeError("activation recovery requires inspection; generations retained") from recovery
             raise
         return record
     def install(self,raw,archive_sha256,manifest):
@@ -214,6 +223,32 @@ class Engine:
                         files[path]=(data,policy)
                 self._snapshot(app,previous,prior_files)
             return self._publish(app,plan["version"],archive_sha256.lower(),files,plan["dependencies"],plan["resources"],plan["conflicts"])
+    def rollback(self,app_id,snapshot_id):
+        with self.locked():
+            app=self._app(app_id);meta,files=self._read_snapshot(app,snapshot_id)
+            target=meta["record"]
+            validate_state(self._installed(),{app_id:target})
+            current=self._pointer(app)
+            if current:
+                previous,base=self._state(app,current);prior_files=self._read_state_files(previous,base)
+                for path,(data,policy) in prior_files.items():
+                    if policy=="preserve":
+                        if path in files and files[path][1]!="preserve":raise ValueError("cannot demote preserved configuration")
+                        files[path]=(data,policy)
+                self._snapshot(app,previous,prior_files)
+            return self._publish(app,target["version"],target["archive_sha256"],files,target.get("dependencies",[]),target.get("resources",[]),target.get("conflicts",[]))
+    def recovery_report(self,app_id):
+        """Read-only crash inspection; no implicit deletion of generations."""
+        with self.locked():
+            app=self._app(app_id);current=self._pointer(app)
+            stage=[];inactive=[]
+            for name in ("generations","backups"):
+                folder=app/name
+                if not folder.exists():continue
+                for entry in sorted(directory(folder).iterdir()):
+                    if re.fullmatch(r"\.stage-[a-f0-9]{32}",entry.name):stage.append(name+"/"+entry.name)
+                    elif name=="generations" and GEN.fullmatch(entry.name) and entry.name!=current:inactive.append(entry.name)
+            return {"id":app_id,"current":current,"staged":stage,"inactive_generations":inactive}
     def status(self,app_id):
         with self.locked():
             app=self._app(app_id)
