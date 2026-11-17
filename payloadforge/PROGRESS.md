@@ -137,3 +137,8 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Corrected implementation and reconciled tests with host policy: preserve omitted configurations; simulate pointer failure using actual generation identity.
 - [Run 44180101366](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44180101366), commit 9fad721: host `Ran 215 tests in 8.651s` / `OK`; native preflight compilation passed.
 - Native update retains prior generation, validates upstream and effective registry hashes, verifies immutable prior data, copies current preserved files, rejects symlinks/hardlinks and conflicts. Same-version update rejected; version ordering and verified backup/rollback are separate gates. Native library only, no hardware execution.
+
+## N6: native independent backups
+- [Run 44180511787](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44180511787), commit 713dc23. Host `Ran 222 tests in 12.498s` / `OK`; SDK native preflight compiled.
+- Independent, content-addressed snapshots of registered data with actual byte hashes (including mutable configs). Manual backup and verification APIs, automatic pre-update snapshot, idempotent reuse only after verifying existing snapshot. Corrupt snapshots block updates.
+- Caller must serialize threads and quiesce the managed app. Backup is linked in native library but not invoked by the read-only PS5 ELF. Hardware not tested.
