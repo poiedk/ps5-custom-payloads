@@ -26,19 +26,6 @@
     "description": "Verify firmware compatibility before use."
   },
   {
-    "id": "shadowmountplus",
-    "name": "ShadowMountPlus",
-    "filename": "shadowmountplus.elf",
-    "url": "https://github.com/drakmor/ShadowMountPlus/releases/download/1.7beta12/shadowmountplus.elf",
-    "source_direct": "https://github.com/drakmor/ShadowMountPlus/releases/download/1.7beta12/shadowmountplus.elf",
-    "version": "1.7beta12",
-    "last_update": "2026-11-08",
-    "category": "Utilities & Tools",
-    "checksum": "8755172ec9bef1bff5453ea75606e0caf7c41b5963f94f5a1087e7e8c6d9b1bd",
-    "source": "https://github.com/drakmor/ShadowMountPlus/releases",
-    "description": "Verify firmware compatibility before use."
-  },
-  {
     "id": "alembic",
     "name": "Alembic Engine",
     "filename": "alembic.elf",
@@ -49,32 +36,6 @@
     "category": "Utilities & Tools",
     "checksum": "82c5ae495166e018ead5042adb7820e7d37bf40b2c18c5ee0af909a5f042f6da",
     "source": "https://github.com/fthdgn-gh/Alembic/releases",
-    "description": "Verify firmware compatibility before use."
-  },
-  {
-    "id": "ps5upload",
-    "name": "ps5upload",
-    "filename": "ps5upload.elf",
-    "url": "https://github.com/phantomptr/ps5upload/releases/download/v12.6.3/ps5upload-12.6.3.elf",
-    "source_direct": "https://github.com/phantomptr/ps5upload/releases/download/v12.6.3/ps5upload-12.6.3.elf",
-    "version": "v12.6.3",
-    "last_update": "2026-11-17",
-    "category": "Utilities & Tools",
-    "checksum": "9e640b760fe7ae79f2dd7a7dfefda6720bbbf79ac4219a02b6f199df71e74c5d",
-    "source": "https://github.com/phantomptr/ps5upload/releases",
-    "description": "Verify firmware compatibility before use."
-  },
-  {
-    "id": "kstuff-lite",
-    "name": "kstuff-lite",
-    "filename": "kstuff-lite.elf",
-    "url": "https://github.com/EchoStretch/kstuff-lite/releases/download/v1.11/kstuff.elf",
-    "source_direct": "https://github.com/EchoStretch/kstuff-lite/releases/download/v1.11/kstuff.elf",
-    "version": "v1.11",
-    "last_update": "2026-09-20",
-    "category": "Utilities & Tools",
-    "checksum": "ab9a6cb4d3b1daf139d4d646e402b1cf569071acd64599c936d7a3a6164dc779",
-    "source": "https://github.com/EchoStretch/kstuff-lite/releases",
     "description": "Verify firmware compatibility before use."
   },
   {
