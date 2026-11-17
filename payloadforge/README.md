@@ -11,9 +11,12 @@ Development preview. PayloadForge is a proposed PS5 homebrew bundle installer, n
 
 ## Milestones
 - [x] Development branch and initial archive validator.
+- [x] Dry-run companion manifest validator (data-only files, dedicated root, configuration preservation).
+- [x] OmniPad versioned asset matcher corrected in development.
+- [ ] Confirm CI and upstream asset SHA-256 before production promotion.
 - [ ] Review archive sources and distribution licenses.
 - [ ] Integration tests and verified publish workflow.
-- [ ] Manifest validation, backup and rollback implementation.
+- [ ] Native installation, backup and rollback implementation.
 - [ ] Native build and real-console testing.
 - [ ] Stable release after validation.
 
