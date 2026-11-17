@@ -5,6 +5,7 @@ import hmac
 import json
 import secrets
 import threading
+import zipfile
 from collections import deque
 from datetime import datetime,timezone
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
@@ -112,7 +113,7 @@ class Handler(BaseHTTPRequestHandler):
                 elif action=="rollback":result=e.rollback(item["id"],item["snapshot"])
                 else:result=e.uninstall(item["id"],preserve_config=item["preserve_config"])
             self.server.event(action,True);self.reply(200,result)
-        except (ValueError,OSError,RuntimeError,TypeError) as exc:
+        except (ValueError,OSError,RuntimeError,TypeError,zipfile.BadZipFile) as exc:
             self.server.event(action if isinstance(action,str) and len(action)<32 else "invalid",False)
             self.reply(400,{"error":str(exc)[:300]})
 
