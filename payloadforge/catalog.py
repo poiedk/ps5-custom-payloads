@@ -35,7 +35,7 @@ def join(pldmgr,sidecar):
         if not upstream or upstream!=asset or "/releases/download/" not in item["archive_url"]:raise ValueError("archive must be official release")
         if not all(isinstance(item[k],str) and SHA.fullmatch(item[k]) for k in ("archive_sha256","manifest_sha256")):raise ValueError("invalid checksum")
         firmwares=item["firmwares"]
-        if not isinstance(firmwares,list) or not firmwares or len(firmwares)>64 or len(set(firmwares))!=len(firmwares) or not all(isinstance(x,str) and re.fullmatch(r"\d{1,2}\.\d{2}",x) for x in firmwares):
+        if not isinstance(firmwares,list) or not firmwares or len(firmwares)>64 or not all(isinstance(x,str) and re.fullmatch(r"\d{1,2}\.\d{2}",x) for x in firmwares) or len(set(firmwares))!=len(firmwares):
             raise ValueError("explicit firmware list required")
         link=item["pldmgr_id"]
         if link is not None:
