@@ -1,0 +1,15 @@
+name: PayloadForge tests
+on:
+  push:
+    branches: ['dev/payloadforge']
+    paths: ['payloadforge/**', '.github/workflows/payloadforge-tests.yml']
+  pull_request:
+    paths: ['payloadforge/**', '.github/workflows/payloadforge-tests.yml']
+permissions:
+  contents: read
+jobs:
+  archive-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s payloadforge -p 'test_*.py' -v
