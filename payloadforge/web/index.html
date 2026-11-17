@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PayloadForge · Host Preview</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body><header><h1>PayloadForge</h1><p>Host preview · Data-only bundles · Not a PS5 installer</p></header>
+<main>
+<section><h2>Session</h2><label for="token">Local session token</label><div class="row"><input id="token" type="password" autocomplete="off"><button id="connect">Connect</button></div><p id="connection" role="status">Disconnected</p></section>
+<section><div class="row"><h2>Packages</h2><button id="refresh">Refresh</button></div><div id="packages" class="package-list">Connect first.</div></section>
+<section><h2>Install / Updates</h2><p>Use a reviewed local ZIP, its external manifest and the verified upstream checksum. A successful preview is required before applying.</p>
+<label for="operation">Operation</label><select id="operation"><option>install</option><option>upgrade</option><option>downgrade</option></select>
+<label for="archive">ZIP</label><input id="archive" type="file" accept=".zip,application/zip">
+<label for="manifest">Manifest</label><input id="manifest" type="file" accept=".json,application/json">
+<label for="sha">ZIP SHA-256</label><input id="sha" maxlength="64" spellcheck="false">
+<div class="row"><button id="preview">Verify preview</button><button id="apply" disabled>Apply reviewed plan</button></div></section>
+<section><h2>Manage / Backups</h2><label for="package-id">Package ID</label><input id="package-id" maxlength="48" spellcheck="false"><div class="row"><button id="versions">Versions</button><button id="backup">Backup</button><button id="recovery">Recovery report</button></div>
+<label for="snapshot">Snapshot ID</label><input id="snapshot" maxlength="32" spellcheck="false"><button id="rollback">Rollback</button>
+<label class="check"><input id="keep" type="checkbox" checked> Preserve config on reinstall</label><button id="uninstall" class="danger">Uninstall</button></section>
+<section><div class="row"><h2>Activity</h2><button id="logs">Logs</button></div><pre id="output" role="status" tabindex="0">No operation yet.</pre></section>
+</main><footer>No autoload, payload execution, system-folder writes or external server.</footer></body></html>
