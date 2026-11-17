@@ -16,6 +16,7 @@ import stat
 import uuid
 import zipfile
 from pathlib import Path
+from datetime import datetime, timezone
 from .archive import MAX_MEMBER, MAX_TOTAL, safe_name
 from .manifest import ID, validate
 from .bundle import verify_bundle
@@ -120,6 +121,55 @@ class Engine:
             current=self._pointer(app)
             if current:result[app.name]=self._state(app,current)[0]
         return result
+    def _snapshot(self,app,record,files):
+        folder=directory(app/"backups",True)
+        name=uuid.uuid4().hex;stage=folder/(".stage-"+name);final=folder/name
+        stage.mkdir(mode=0o700)
+        snapshot_record={**record,"files":[{"path":path,"size":len(raw),"sha256":digest(raw),"policy":policy}
+                         for path,(raw,policy) in sorted(files.items())]}
+        validate({"schema_version":3,"id":app.name,"version":record["version"],"files":snapshot_record["files"],"dependencies":record.get("dependencies",[]),"resources":record.get("resources",[]),"conflicts":record.get("conflicts",[])})
+        meta={"snapshot":name,"created_at":datetime.now(timezone.utc).isoformat(),"record":snapshot_record}
+        try:
+            base=directory(stage/"data",True)
+            for path,(raw,_) in files.items():write_new(within(base,path,True),raw)
+            write_new(stage/"backup.json",encode(meta))
+            for parent,_,_ in os.walk(stage,topdown=False):sync_dir(Path(parent))
+            os.replace(stage,final);sync_dir(folder)
+        except Exception:
+            if stage.exists():shutil.rmtree(stage)
+            raise
+        self._read_snapshot(app,name)
+        return meta
+    def _read_snapshot(self,app,name):
+        if not isinstance(name,str) or not GEN.fullmatch(name):raise ValueError("invalid snapshot id")
+        folder=directory(directory(app/"backups")/name)
+        meta=json.loads(regular(folder/"backup.json",2*1024*1024))
+        if set(meta)!={"snapshot","created_at","record"} or meta["snapshot"]!=name:raise ValueError("invalid snapshot metadata")
+        record=meta["record"]
+        if record.get("id")!=app.name or not GEN.fullmatch(record.get("generation","")) or not re.fullmatch(r"[a-f0-9]{64}",record.get("archive_sha256","")):
+            raise ValueError("invalid snapshot registry")
+        validate({"schema_version":3,"id":record["id"],"version":record["version"],"files":record["files"],"dependencies":record.get("dependencies",[]),"resources":record.get("resources",[]),"conflicts":record.get("conflicts",[])})
+        base=directory(folder/"data");files={}
+        for f in record["files"]:
+            data=regular(within(base,f["path"]),MAX_MEMBER)
+            if len(data)!=f["size"] or digest(data)!=f["sha256"]:raise ValueError("snapshot integrity failure: "+f["path"])
+            files[f["path"]]=(data,f["policy"])
+        return meta,files
+    def backup(self,app_id):
+        with self.locked():
+            app=self._app(app_id);current=self._pointer(app)
+            if not current:raise ValueError("not installed")
+            record,base=self._state(app,current)
+            return self._snapshot(app,record,self._read_state_files(record,base))
+    def backups(self,app_id):
+        with self.locked():
+            app=self._app(app_id);folder=app/"backups"
+            if not folder.exists():return []
+            result=[]
+            for p in sorted(directory(folder).iterdir()):
+                if GEN.fullmatch(p.name):
+                    meta,_=self._read_snapshot(app,p.name);result.append(meta)
+            return sorted(result,key=lambda m:m["created_at"],reverse=True)
     def _publish(self,app,version,archive_sha256,files,dependencies=(),resources=(),conflicts=()):
         items=[{"path":path,"sha256":digest(raw),"size":len(raw),"policy":policy}
                for path,(raw,policy) in sorted(files.items())]
@@ -157,10 +207,12 @@ class Engine:
             current=self._pointer(app)
             if current:
                 previous,base=self._state(app,current)
-                for path,(data,policy) in self._read_state_files(previous,base).items():
+                prior_files=self._read_state_files(previous,base)
+                for path,(data,policy) in prior_files.items():
                     if policy=="preserve":
                         if path in files and files[path][1]!="preserve":raise ValueError("cannot demote preserved configuration")
                         files[path]=(data,policy)
+                self._snapshot(app,previous,prior_files)
             return self._publish(app,plan["version"],archive_sha256.lower(),files,plan["dependencies"],plan["resources"],plan["conflicts"])
     def status(self,app_id):
         with self.locked():
