@@ -137,3 +137,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Corrected implementation and reconciled tests with host policy: preserve omitted configurations; simulate pointer failure using actual generation identity.
 - [Run 44180101366](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44180101366), commit 9fad721: host `Ran 215 tests in 8.651s` / `OK`; native preflight compilation passed.
 - Native update retains prior generation, validates upstream and effective registry hashes, verifies immutable prior data, copies current preserved files, rejects symlinks/hardlinks and conflicts. Same-version update rejected; version ordering and verified backup/rollback are separate gates. Native library only, no hardware execution.
+
+## N5/N6 reconciliation checkpoint
+- N5 run [44180111669](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44180111669), commit 74f32d1: `Ran 215 tests in 8.118s` / `OK`; all three jobs succeeded. An earlier attempt 44179860015 failed compilation (`FAILED (errors=2)`) and was not counted as a pass.
+- This isolated N6 feature branch contains a separate snapshot implementation and nine regression tests (commits 9d8d43e, fff1e42, f64fb27). Draft PR #2 conflicts with newer changes on dev/payloadforge; no CI run was returned for f64fb27. Do not merge the competing implementation or treat it as tested.
+- The dev/payloadforge branch independently contains N6. The actual logs for [run 44180511787](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44180511787), commit 713dc23, confirmed `Ran 222 tests in 12.498s` / `OK` and three successful jobs. Native preflight ELF SHA-256 dff8076a00bc7c0a14a02c99a66eff0d57de89b564a9fbffac78f69bd854e374. Later changes to store.c require their own verification.
+- Concurrent branch changes observed; keep both histories, reconcile with current verified dev branch before N7 rollback. No merge or hardware operation.
