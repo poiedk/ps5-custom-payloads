@@ -4,7 +4,7 @@ class NativeStoreTests(unittest.TestCase):
     def setUpClass(cls):
         tmp=tempfile.TemporaryDirectory();cls.addClassCleanup(tmp.cleanup)
         base=pathlib.Path(__file__).resolve().parent/"native";out=pathlib.Path(tmp.name)/"store.so"
-        subprocess.run(["cc","-std=c11","-Wall","-Wextra","-Werror","-shared","-fPIC",*[str(base/x) for x in ("core.c","sha256.c","zip.c","manifest.c","store.c")],"-o",str(out)],check=True)
+        subprocess.run(["cc","-std=c11","-Wall","-Wextra","-Werror","-shared","-fPIC",*[str(base/x) for x in ("core.c","sha256.c","zip.c","manifest.c","store.c","version.c")],"-o",str(out)],check=True)
         cls.lib=ctypes.CDLL(str(out));cls.lib.pf_install_initial.argtypes=[ctypes.c_int,ctypes.c_void_p,ctypes.c_size_t,ctypes.c_char_p,ctypes.c_void_p,ctypes.c_size_t,ctypes.c_char_p];cls.lib.pf_install_initial.restype=ctypes.c_int
         cls.lib.pf_install_update.argtypes=cls.lib.pf_install_initial.argtypes;cls.lib.pf_install_update.restype=ctypes.c_int
     def setUp(self):
