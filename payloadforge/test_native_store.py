@@ -45,7 +45,7 @@ class NativeStoreTests(unittest.TestCase):
         outside=self.root/"outside";outside.mkdir();(self.root/"apps").mkdir();(self.root/"apps/demo").symlink_to(outside)
         self.assertEqual(self.install(),-1);self.assertEqual(list(outside.iterdir()),[])
     def test_fail_before_activation(self):
-        app=self.app();app.mkdir(parents=True)
+        app=self.app();app.parent.mkdir(mode=0o700);app.mkdir(mode=0o700)
         (app/(".pointer-"+self.ah.decode())).write_text("blocked")
         self.assertEqual(self.install(),-1)
         self.assertFalse((app/"CURRENT").exists())
