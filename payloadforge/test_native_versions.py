@@ -1,6 +1,6 @@
 import ctypes,hashlib,json,unittest
 import test_native_store as base
-from test_native_update import NativeUpdateTests
+import test_native_update as update_tests
 from payloadforge.dependencies import version_key
 
 class NativeVersionTests(unittest.TestCase):
@@ -8,7 +8,7 @@ class NativeVersionTests(unittest.TestCase):
     install=base.NativeStoreTests.install
     app=base.NativeStoreTests.app
     active=base.NativeStoreTests.active
-    bundle=NativeUpdateTests.bundle
+    bundle=update_tests.NativeUpdateTests.bundle
     @classmethod
     def setUpClass(cls):
         base.NativeStoreTests.setUpClass.__func__(cls)
