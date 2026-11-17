@@ -106,3 +106,13 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Native read-only preflight artifact 14367276278, ELF SHA-256: 10f652db2aa064374ff08b2c468dc31c90d27b7087871f664fa0ca15fb8038d7.
 - Production verified unchanged: sources.json 37041fd, update.py 8d6bc48, status.json d4c93e8, nine payload IDs. OmniPad/LZ4 warnings remain. No merge, stable release or hardware operation.
 - Autonomous run ends with a verified host alpha and native smoke build, not a functional PS5 installer. Full native port and its dependent PS5 web/catalog integration remain engineering work, not simply hardware approval.
+
+## v0.2 native phase — N1: SHA-256
+- CI verified: [run 44176203350](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44176203350), commit 328aed3. All three jobs passed.
+- Actual log: `Ran 166 tests in 8.928s` / `OK`. Native preflight cross-compiled; SHA-256 b25ba61f4e7062787455a39c448f6f3532313c9e9263417464877da29ee6d10e.
+- Portable SHA-256 compared with Python hashlib known, boundary and random byte vectors; no console execution.
+## N2: strict native ZIP reader
+- CI verified: [run 44176662095](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44176662095), commit 548fe48. All three jobs passed.
+- Actual log: `Ran 177 tests in 6.181s` / `OK`.
+- ZIP_STORED, ASCII paths, standard 32-bit, contiguous entries only. No compression, ZIP64, extra fields, explicit dirs, symlinks or special files. CRC and duplicate/prefix checks. No filesystem writes.
+- Native DEFLATE/TAR.GZ remain unimplemented; host updater retains broader support.
