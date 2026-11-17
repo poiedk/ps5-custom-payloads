@@ -73,3 +73,15 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Actual log: `Ran 135 tests in 0.440s` / `OK`.
 - Explicit install/upgrade/downgrade direction, list/info/backups/versions/rollback/uninstall/recovery; strict JSON and confirmation for writes. No payload execution.
 - Host CLI only, not PS5-native; no runtime package download.
+
+## Stage 11 — native port (partial)
+- First CI run [44166891431](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44166891431): host `Ran 139 tests in 0.404s` / `OK`; native build failed with llvm-config path Error 127.
+- Retry [44167128569](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44167128569), commit 8943fd7: both jobs succeeded. Actual host log `Ran 139 tests in 2.040s` / `OK`; `PayloadForge native preflight: OK (read-only; not installer)`.
+- SDK v0.42 pinned SHA-256: 8cfbc7cd5811e719eb4f0c47eea668d3dc7b40bc8ab11c4a5031d40c23ec02da.
+- CI emitted read-only cross-compiled `payloadforge-preflight.elf`, SHA-256 10f652db2aa064374ff08b2c468dc31c90d27b7087871f664fa0ca15fb8038d7, artifact 14366007046. No execution/deployment.
+- C path/id/hash syntax and format-magic vectors verified on host. Full archive/manifest parser, cryptographic hashing and transactional engine parity in C are **not** implemented. Native installation remains blocked; no claim of console functionality.
+
+## Stage 12 — host-only API
+- CI verified: [run 44167528195](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44167528195), commit ca2f009.
+- Actual log: `Ran 148 tests in 7.210s` / `OK`. Native read-only preflight also cross-compiled successfully.
+- Loopback-only authenticated JSON API, explicit confirmation, host/origin checks, size limits, logs, synthetic data-bundle transactions. Independent host work; native PS5 daemon not implemented.
