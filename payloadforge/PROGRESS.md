@@ -61,3 +61,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Actual log: `Ran 123 tests in 0.139s` / `OK`.
 - Verified snapshot restore; preserve latest configs, validate dependency/conflict graph, backup before restore. Simulated faults before/after pointer switch, including initial install. Recovery report is read-only.
 - This is exception/fault injection on host, not physical power interruption or PS5 testing.
+
+## Stage 9 — registry-only uninstall
+- CI verified: [run 44165913002](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44165913002), commit 1df8eb4.
+- Actual log: `Ran 129 tests in 1.014s` / `OK`.
+- Atomic uninstall marker, verified snapshot, cleanup of registry-listed files in inactive generation only, untracked files retained. Optional config reuse on reinstall; backups remain intact even with drop-config.
+- Reverse dependencies block removal. Cleanup failure is reported, not hidden.
