@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200809L
 #define _DEFAULT_SOURCE 1
 #include "store.h"
+#include "core.h"
 #include "manifest.h"
 #include "zip.h"
 #include "sha256.h"
@@ -20,7 +21,8 @@ static int dir_at(int fd,const char *name,int create){
  if(create&&mkdirat(fd,name,0700)&&errno!=EEXIST)return -1;
  int out=openat(fd,name,O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
  if(out<0)return -1;
- if(!is_dir(out)){close(out);return -1;}
+ struct stat s;
+ if(!is_dir(out)||fstat(out,&s)||s.st_uid!=geteuid()||(s.st_mode&0077)){close(out);return -1;}
  return out;
 }
 static int write_all(int fd,const unsigned char *data,size_t len){
@@ -134,16 +136,85 @@ static int load_generation(int gen,const char *generation,const char *id,pf_mani
  done:free(raw);return rc;
 }
 
+
+/* Open only bounded, owner-owned, single-link regular files below private directories. */
+static unsigned char *read_file(int dir,const char *name,size_t max,size_t *n){
+ *n=0;int fd=openat(dir,name,O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_NONBLOCK);
+ if(fd<0)return NULL;
+ struct stat s;
+ if(fstat(fd,&s)||!S_ISREG(s.st_mode)||s.st_uid!=geteuid()||s.st_nlink!=1||s.st_size<0||(uint64_t)s.st_size>max){close(fd);return NULL;}
+ size_t length=(size_t)s.st_size,off=0;
+ unsigned char *p=malloc(length+1);
+ if(!p){close(fd);return NULL;}
+ while(off<length){
+  ssize_t got=read(fd,p+off,length-off);
+  if(got<0&&errno==EINTR)continue;
+  if(got<=0){free(p);close(fd);return NULL;}
+  off+=(size_t)got;
+ }
+ unsigned char extra;ssize_t got;do{got=read(fd,&extra,1);}while(got<0&&errno==EINTR);
+ close(fd);if(got!=0){free(p);return NULL;}
+ p[length]=0;*n=length;return p;
+}
+static unsigned char *read_member(int root,const char *path,size_t *n){
+ char name[1025];int fd=file_parent(root,path,name,0);
+ if(fd<0)return NULL;
+ unsigned char *p=read_file(fd,name,PF_ZIP_MAX_MEMBER,n);close(fd);return p;
+}
+static int lower_hash(const unsigned char *p,size_t n){
+ if(n!=64||!pf_sha_valid((const char *)p,n))return 0;
+ for(size_t i=0;i<n;i++)if(p[i]>='A'&&p[i]<='F')return 0;
+ return 1;
+}
+static int load_previous(int app,int gens,const char *id,pf_manifest *plan,pf_file *files,int *data){
+ int rc=-1,g=-1;size_t cn=0,mn=0,hn=0;
+ unsigned char *current=read_file(app,"CURRENT",64,&cn),*m=NULL,*h=NULL;
+ *data=-1;
+ if(!current||!lower_hash(current,cn))goto end;
+ g=dir_at(gens,(const char *)current,0);if(g<0)goto end;
+ m=read_file(g,"manifest.json",PF_MANIFEST_LIMIT,&mn);
+ h=read_file(g,"manifest.sha256",64,&hn);
+ if(!m||!h||!lower_hash(h,hn)||!pf_sha256_matches(m,mn,(const char *)h)||pf_manifest_parse(m,mn,plan,files,PF_ZIP_MAX_MEMBERS)||strcmp(plan->id,id))goto end;
+ *data=dir_at(g,"data",0);if(*data<0)goto end;
+ rc=0;
+ end:free(current);free(m);free(h);if(g>=0)close(g);return rc;
+}
+static int find_file(const pf_file *files,size_t n,const char *path){
+ for(size_t i=0;i<n;i++)if(!strcmp(files[i].path,path))return (int)i;
+ return -1;
+}
+/* Validate prior immutable files and preserve config bytes. A removed or
+ * reclassified preserved path blocks an update until explicitly migrated. */
+static int verify_prior(int old_data,const pf_manifest *old,pf_file *old_files,const pf_manifest *next,pf_file *next_files){
+ size_t total=next->total;
+ for(size_t i=0;i<old->count;i++){
+  pf_file *f=old_files+i;size_t n=0;
+  unsigned char *raw=read_member(old_data,f->path,&n);if(!raw)return -1;
+  int ok=1;
+  if(!f->preserve)ok=n==f->size&&pf_sha256_matches(raw,n,f->sha256);
+  else{
+   int j=find_file(next_files,next->count,f->path);
+   if(j<0||!next_files[j].preserve)ok=0;
+   else{
+    total-=next_files[j].size;
+    if(n>PF_ZIP_MAX_TOTAL-total)ok=0;else total+=n;
+   }
+  }
+  free(raw);if(!ok)return -1;
+ }
+ return 0;
+}
+
 /* Failed staging directories are deliberately retained for explicit inspection.
  * A partial stage can never become active; no recursive deletion is performed.
  */
 static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  const unsigned char *manifest,size_t mn,const char *mh,int update){
- int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,stage=-1,data=-1;
+ int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,stage=-1,data=-1,old_data=-1;
  pf_file *files=NULL,*old=NULL,*check=NULL;pf_zip_entry *entries=NULL;
  int previous=-1,prior_data=-1;unsigned char *effective=NULL;size_t effective_n=0;
  pf_manifest prior={0};char current_id[65]={0};
- pf_manifest plan;size_t count=0;
+ pf_manifest plan,old_plan={0};size_t count=0;
  struct stat rootstat;
  if(fstat(root,&rootstat)||!S_ISDIR(rootstat.st_mode)||rootstat.st_uid!=geteuid()||(rootstat.st_mode&0077))return -1;
  files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));
@@ -189,7 +260,20 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  stage=dir_at(gens,staging,0);if(stage<0)goto done;
  data=dir_at(stage,"data",1);if(data<0)goto done;
  if(!update){
-  for(size_t i=0;i<count;i++)if(write_member(data,entries+i))goto done;
+  size_t actual_total=0;
+ for(size_t i=0;i<count;i++){
+  pf_zip_entry e=entries[i];unsigned char *preserved=NULL;char path[1025];
+  memcpy(path,e.name,e.name_len);path[e.name_len]=0;
+  if(update){
+   int j=find_file(old_files,old_plan.count,path);
+   if(j>=0&&old_files[j].preserve){
+    preserved=read_member(old_data,path,&e.size);if(!preserved)goto done;e.data=preserved;
+   }
+  }
+  int failed=e.size>PF_ZIP_MAX_TOTAL-actual_total||write_member(data,&e);
+  if(!failed)actual_total+=e.size;
+  free(preserved);if(failed)goto done;
+ }
  }else{
   size_t total=0;
   for(size_t i=0;i<plan.count;i++){
@@ -219,18 +303,26 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  done:
  if(prior_data>=0)close(prior_data);
  if(previous>=0)close(previous);
+ if(old_data>=0)close(old_data);
  if(data>=0)close(data);
  if(stage>=0)close(stage);
  if(gens>=0)close(gens);
  if(app>=0)close(app);
  if(apps>=0)close(apps);
  if(lock>=0)close(lock);
- free(effective);free(check);free(old);free(entries);free(files);return rc;
+ free(effective);free(check);free(old);free(entries);free(files);free(old_files);return rc;
 }
 
-int pf_install_initial(int root,const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh){
+static int apply(int update,int root,const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh){
  return apply(root,a,an,ah,m,mn,mh,0);
 }
 int pf_install_update(int root,const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh){
  return apply(root,a,an,ah,m,mn,mh,1);
+}
+
+int pf_install_initial(int root,const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh){
+ return apply(0,root,a,an,ah,m,mn,mh);
+}
+int pf_update(int root,const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh){
+ return apply(1,root,a,an,ah,m,mn,mh);
 }
