@@ -147,3 +147,8 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - [Run 44181080867](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44181080867), commit fa79fe0. Host `Ran 229 tests in 8.826s` / `OK`; SDK cross-compile succeeded, ELF SHA-256 38778e54a5933ba90bfc18b16e4b91b820b5bad07bba66c2f2d046b57f9770e8.
 - Snapshots now bind the original upstream manifest and archive hash metadata as well as actual data and registry. Development-only older snapshot format is rejected; no console migration required.
 - Rollback verifies snapshot independently of the old generation, backs up current state, merges latest preserved config, and atomically activates a fresh generation. Simulated failure before activation retains current marker. Physical power-loss and PS5 operation remain untested.
+
+## N8: native uninstall and reinstall
+- [Run 44181579359](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44181579359), commit f55a4ef. Host `Ran 236 tests in 8.816s` / `OK`; native preflight cross-compile succeeded.
+- Verified backup followed by atomic deactivation marker. Cleanup only registry-listed regular, owner-owned single-link files; untracked files retained. Explicit config reuse or fresh defaults on reinstall; backups remain in both modes. Partial cleanup is reported.
+- Reinstall uses fresh identity and optional verified snapshot. Rollback while uninstalled and cleanup recovery after abrupt interruption still open. No PS5 execution.
