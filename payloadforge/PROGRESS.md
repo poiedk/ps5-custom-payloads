@@ -67,3 +67,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Actual log: `Ran 129 tests in 1.014s` / `OK`.
 - Atomic uninstall marker, verified snapshot, cleanup of registry-listed files in inactive generation only, untracked files retained. Optional config reuse on reinstall; backups remain intact even with drop-config.
 - Reverse dependencies block removal. Cleanup failure is reported, not hidden.
+
+## Stage 10 — version management and host CLI
+- CI verified: [run 44166289938](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44166289938), commit e03ebea.
+- Actual log: `Ran 135 tests in 0.440s` / `OK`.
+- Explicit install/upgrade/downgrade direction, list/info/backups/versions/rollback/uninstall/recovery; strict JSON and confirmation for writes. No payload execution.
+- Host CLI only, not PS5-native; no runtime package download.
