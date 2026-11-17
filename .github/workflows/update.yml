@@ -7,6 +7,7 @@ on:
     paths:
       - sources.json
       - update.py
+      - payload_icons.py
       - .github/workflows/update.yml
 permissions:
   contents: write
@@ -18,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install image support
+        run: python3 -m pip install 'Pillow>=11,<13'
       - name: Build catalog
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -26,5 +29,5 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add payloads.json payloads_v2.json status.json
+          git add payloads.json payloads_v2.json status.json icons.json
           git diff --cached --quiet || { git commit -m 'Refresh payload catalog'; git push; }
