@@ -16,4 +16,5 @@ int pf_install_update(int rootfd,const unsigned char *archive,size_t archive_n,c
 /* Snapshot is a verified independent copy. Caller serializes threads and quiesces app. */
 int pf_backup(int rootfd,const char *id,char snapshot[65]);
 int pf_backup_verify(int rootfd,const char *id,const char *snapshot);
+int pf_rollback(int rootfd,const char *id,const char *snapshot);
 #endif
