@@ -19,6 +19,7 @@ from pathlib import Path
 from .archive import MAX_MEMBER, MAX_TOTAL, safe_name
 from .manifest import ID, validate
 from .bundle import verify_bundle
+from .dependencies import dependency_order
 
 GEN = re.compile(r"[a-f0-9]{32}")
 def digest(raw): return hashlib.sha256(raw).hexdigest()
@@ -82,11 +83,12 @@ class Engine:
     def _state(self,app,name):
         folder=self._generation(app,name)
         record=json.loads(regular(folder/"registry.json",2*1024*1024))
-        if set(record)!={"id","version","generation","archive_sha256","files"} or record["id"]!=app.name or record["generation"]!=name:
+        fields={"id","version","generation","archive_sha256","files"}
+        if set(record) not in (fields,fields|{"dependencies"}) or record["id"]!=app.name or record["generation"]!=name:
             raise ValueError("invalid registry")
         if not re.fullmatch(r"[a-f0-9]{64}",record["archive_sha256"]):
             raise ValueError("invalid archive digest in registry")
-        validate({"schema_version":1,"id":record["id"],"version":record["version"],"files":record["files"]})
+        validate({"schema_version":2,"id":record["id"],"version":record["version"],"files":record["files"],"dependencies":record.get("dependencies",[])})
         return record,directory(folder/"data")
     def _read_state_files(self,record,base):
         result={};total=0
@@ -108,14 +110,25 @@ class Engine:
             tmp.unlink(missing_ok=True)
     def _before_activate(self,app,generation):
         """Test hook; production implementation performs no action."""
-    def _publish(self,app,version,archive_sha256,files):
+    def _installed(self):
+        base=self.root/"apps"
+        if not base.exists(): return {}
+        result={}
+        for app in sorted(directory(base).iterdir()):
+            if not ID.fullmatch(app.name):raise ValueError("unexpected package directory")
+            directory(app)
+            current=self._pointer(app)
+            if current:result[app.name]=self._state(app,current)[0]
+        return result
+    def _publish(self,app,version,archive_sha256,files,dependencies=()):
         items=[{"path":path,"sha256":digest(raw),"size":len(raw),"policy":policy}
                for path,(raw,policy) in sorted(files.items())]
-        validate({"schema_version":1,"id":app.name,"version":version,"files":items})
+        dependencies=list(dependencies)
+        validate({"schema_version":2,"id":app.name,"version":version,"files":items,"dependencies":dependencies})
         gens=directory(app/"generations",True)
         name=uuid.uuid4().hex;stage=gens/(".stage-"+name);final=gens/name
         stage.mkdir(mode=0o700)
-        record={"id":app.name,"version":version,"generation":name,"archive_sha256":archive_sha256,"files":items}
+        record={"id":app.name,"version":version,"generation":name,"archive_sha256":archive_sha256,"files":items,"dependencies":dependencies}
         try:
             base=directory(stage/"data",True)
             for path,(raw,_) in files.items():write_new(within(base,path,True),raw)
@@ -139,6 +152,7 @@ class Engine:
                 if len(data)!=f["size"] or digest(data)!=f["sha256"]:raise ValueError("bundle changed")
                 files[f["relative_path"]]=(data,f["policy"])
         with self.locked():
+            dependency_order(self._installed(),{plan["id"]:{"version":plan["version"],"dependencies":plan["dependencies"]}})
             app=self._app(plan["id"],True)
             current=self._pointer(app)
             if current:
@@ -147,7 +161,7 @@ class Engine:
                     if policy=="preserve":
                         if path in files and files[path][1]!="preserve":raise ValueError("cannot demote preserved configuration")
                         files[path]=(data,policy)
-            return self._publish(app,plan["version"],archive_sha256.lower(),files)
+            return self._publish(app,plan["version"],archive_sha256.lower(),files,plan["dependencies"])
     def status(self,app_id):
         with self.locked():
             app=self._app(app_id)
