@@ -20,13 +20,13 @@ def verify_bundle(raw, archive_sha256, manifest):
         if len(items)>MAX_FILES or sum(i.file_size for i in items)>MAX_TOTAL:
             raise ValueError("archive limits exceeded")
         for i in items:
-            path=safe_name(i.filename)
+            path=safe_name(i.orig_filename)
             k=path.casefold()
             if k in seen:
                 raise ValueError("duplicate archive path")
             seen.add(k)
             mode=stat.S_IFMT(i.external_attr>>16)
-            if i.flag_bits&1 or mode not in (0,stat.S_IFREG,stat.S_IFDIR):
+            if i.flag_bits&1 or mode not in (0,stat.S_IFDIR if i.is_dir() else stat.S_IFREG):
                 raise ValueError("encrypted or special archive member")
             if i.is_dir():
                 if mode not in (0,stat.S_IFDIR) or not any(x.startswith(path+"/") for x in expected):
