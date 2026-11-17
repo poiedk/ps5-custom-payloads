@@ -3,8 +3,8 @@ import hashlib
 import io
 import stat
 import zipfile
-from archive import safe_name, MAX_ARCHIVE, MAX_MEMBER, MAX_TOTAL, MAX_FILES
-from manifest import validate
+from payloadforge.archive import safe_name, MAX_ARCHIVE, MAX_MEMBER, MAX_TOTAL, MAX_FILES
+from payloadforge.manifest import validate
 
 def verify_bundle(raw, archive_sha256, manifest):
     plan=validate(manifest)
