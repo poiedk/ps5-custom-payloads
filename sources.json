@@ -96,5 +96,13 @@
     "name": "GhosttoothAPI",
     "pattern": "Ghost-?toothAPI\\.elf",
     "prerelease": true
+  },
+  {
+    "id": "anypad",
+    "repo": "elmonomalva0/Any-Pad-ps5",
+    "provider": "codeberg",
+    "name": "AnyPad",
+    "pattern": "AnyPad-PS5(?:-v?[0-9.]+(?:-beta[0-9.]*)?)?\\.elf",
+    "prerelease": true
   }
 ]
