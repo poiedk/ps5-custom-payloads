@@ -1,10 +1,13 @@
 import hashlib,io,json,os,unittest,zipfile
-from test_native_store import NativeStoreTests
+import test_native_store as base
 
-class NativeUpdateTests(NativeStoreTests):
+class NativeUpdateTests(unittest.TestCase):
+    setUp=base.NativeStoreTests.setUp
+    install=base.NativeStoreTests.install
+    app=base.NativeStoreTests.app
     @classmethod
     def setUpClass(cls):
-        super().setUpClass()
+        base.NativeStoreTests.setUpClass.__func__(cls)
         cls.lib.pf_update.argtypes=cls.lib.pf_install_initial.argtypes
         cls.lib.pf_update.restype=cls.lib.pf_install_initial.restype
     def bundle(self,version="2",items=None):
