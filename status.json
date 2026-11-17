@@ -2,5 +2,43 @@
   "warnings": [
     "omnipad: no matching release asset",
     "lz4-compression: no matching release asset"
-  ]
+  ],
+  "icons": {
+    "kraken-mount": {
+      "type": "upstream",
+      "url": "https://raw.githubusercontent.com/quer3q/kraken-mount/main/docs/logo.png"
+    },
+    "shadowkraken": {
+      "type": "upstream",
+      "url": "https://raw.githubusercontent.com/MNeroba/ShadowKraken/1.0/assets/shadowkraken-logo.png"
+    },
+    "alembic": {
+      "type": "upstream",
+      "url": "https://raw.githubusercontent.com/fthdgn-gh/Alembic/main/app/sce_sys/icon0.png"
+    },
+    "prosperomgr": {
+      "type": "upstream",
+      "url": "https://raw.githubusercontent.com/notmaj0r/ProsperoMgr/main/source/frontend/public/icon-180.png"
+    },
+    "hearbridge": {
+      "type": "upstream",
+      "url": "https://raw.githubusercontent.com/X-F1REBALL-X/HearBridge-PS5/main/assets/icon0.png"
+    },
+    "omnipad-ce": {
+      "type": "upstream",
+      "url": "https://raw.githubusercontent.com/jpemendonca/OmniPad-CE/main/assets/icon0.png"
+    },
+    "glm": {
+      "type": "upstream",
+      "url": "https://raw.githubusercontent.com/leedsy90/game-library-manager-ps5/main/source/tile/icon0.png"
+    },
+    "ghosttoothapi": {
+      "type": "upstream",
+      "url": "https://raw.githubusercontent.com/StonedModder/Ghostcontrol-PS5-USB-Controller-Patcher/main/media/brand/logo.png"
+    },
+    "anypad": {
+      "type": "upstream",
+      "url": "https://codeberg.org/elmonomalva0/Any-Pad-ps5/raw/branch/main/assets/logo.png"
+    }
+  }
 }
