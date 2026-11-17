@@ -11,4 +11,6 @@ int pf_install_initial(int rootfd,const unsigned char *archive,size_t archive_n,
 /* Update requires all previous preserved paths to remain explicitly preserved. */
 int pf_update(int rootfd,const unsigned char *archive,size_t archive_n,const char *archive_sha,
  const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
+int pf_install_update(int rootfd,const unsigned char *archive,size_t archive_n,const char *archive_sha,
+ const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
 #endif
