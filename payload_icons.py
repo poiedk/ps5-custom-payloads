@@ -64,6 +64,18 @@ def custom(s):
     d.text((64,61),label,font=font,anchor='mm',fill='white')
     return im
 
+def bounded_png(im):
+    for size in (128,112,96,80,64,48,32):
+        canvas=im.copy()
+        canvas.thumbnail((size,size),Image.Resampling.LANCZOS)
+        for colors in (256,128,64,32,16):
+            buf=io.BytesIO()
+            canvas.quantize(colors=colors,method=Image.Quantize.FASTOCTREE).save(buf,format='PNG',optimize=True)
+            data=buf.getvalue()
+            if len('data:image/png;base64,')+4*((len(data)+2)//3)<=12288:
+                return data
+    raise ValueError('icon cannot fit PLDMGR limit')
+
 def build_icons(results,sources):
     icons={}; report={}
     for entry in results:
@@ -74,9 +86,7 @@ def build_icons(results,sources):
         except Exception as e:
             im=custom(s)
             report[s['id']]={'type':'custom','reason':str(e)}
-        buf=io.BytesIO()
-        im.save(buf,format='PNG',optimize=True)
-        data=buf.getvalue()
+        data=bounded_png(im)
         key=hashlib.sha256(data).hexdigest()
         icons[key]='data:image/png;base64,'+base64.b64encode(data).decode('ascii')
         entry['icon_key']=key
