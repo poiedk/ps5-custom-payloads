@@ -130,3 +130,10 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - ELF SHA-256 6bfef88e75cf97cba5c0875627c00f6bc1374b8566aedec59ec7a207ad889572; artifact 14369274154.
 - Initial-install-only library is linked; writes exercised in Linux host tests, not on PS5. Private directory fd, POSIX process lock, no symlink following, verified data-only ZIP, staging, fsync and atomic CURRENT pointer. Concurrent threads must be serialized by a future daemon; failure before activation may leave inactive staging/generation metadata for inspection.
 - Update/config merge, registry parity, backup/rollback/uninstall, compressed archives, dependency metadata, native daemon and hardware validation still open.
+
+## N5: native update and effective configuration registry
+- Attempt 1: run 44179758605, overlapping helper definitions caused host and SDK compilation failures.
+- Attempt 2: run 44179935698, SDK build passed but two existing regression assertions failed (omitted preserved configuration policy and predecessor-bound staging identity).
+- Corrected implementation and reconciled tests with host policy: preserve omitted configurations; simulate pointer failure using actual generation identity.
+- [Run 44180101366](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44180101366), commit 9fad721: host `Ran 215 tests in 8.651s` / `OK`; native preflight compilation passed.
+- Native update retains prior generation, validates upstream and effective registry hashes, verifies immutable prior data, copies current preserved files, rejects symlinks/hardlinks and conflicts. Same-version update rejected; version ordering and verified backup/rollback are separate gates. Native library only, no hardware execution.
