@@ -50,3 +50,8 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - CI verified: [run 44164854065](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44164854065), commit f7336bcd.
 - Actual log: `Ran 111 tests in 0.096s` / `OK`.
 - Schema v3 adds explicitly declared TCP/UDP ports, path claims and incompatible version ranges. Reverse conflicts checked before mutation. Does not inspect unmanaged live processes.
+
+## Stage 7 — verified backups
+- CI verified: [run 44165241636](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44165241636), commit 0a77dd4.
+- Actual log: `Ran 117 tests in 0.208s` / `OK`.
+- Pre-update snapshot of all registered files and actual current config hashes; first install has no previous data. Manual backup, listing, tamper detection. Failed backup blocks update. Host only; snapshots retained.
