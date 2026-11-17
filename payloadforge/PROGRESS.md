@@ -33,3 +33,8 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Actual log: `Ran 80 tests in 0.103s` / `OK`.
 - External-manifest data-only ZIP install/update into a private managed root; atomic CURRENT pointer and registry, SHA-256, configuration preservation, failed pre-activation cleanup.
 - Host only: not a native installer; no arbitrary application/system paths. Power-loss durability on PS5 is unverified.
+
+## Stage 5 — dependency validation
+- CI verified: [run 44164226104](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44164226104), commit b670338.
+- Actual log: `Ran 90 tests in 0.118s` / `OK`.
+- Version comparisons, topological order, missing/cyclic dependencies, reverse-dependent upgrade checks. Schema v1 remains accepted; v2 adds dependencies. No automatic download or execution.
