@@ -38,3 +38,15 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - CI verified: [run 44164226104](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44164226104), commit b670338.
 - Actual log: `Ran 90 tests in 0.118s` / `OK`.
 - Version comparisons, topological order, missing/cyclic dependencies, reverse-dependent upgrade checks. Schema v1 remains accepted; v2 adds dependencies. No automatic download or execution.
+
+## Catalog review (independent work)
+- CI verified: [run 44164420759](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44164420759), commit 8fc3518.
+- Actual log: `Ran 102 tests in 0.097s` / `OK`.
+- Offline candidate guard checks canonical source, publisher, repo age, pinned source evidence, independently supplied artifact bytes/hash, compatibility, review evidence and duplicate IDs/names/origins. It does not prove malware safety.
+- Reviewed 12 named projects against the official 34-entry mirror and current sources; WebKit, ShadowMountPlus and Linux loader are official duplicates, HearBridge already custom. Others remain held; no new source was promoted.
+- Automation read returned action-not-found; existing discovery task was not modified. Requirements documented for future discovery.
+
+## Stage 6 — conflict detection
+- CI verified: [run 44164854065](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44164854065), commit f7336bcd.
+- Actual log: `Ran 111 tests in 0.096s` / `OK`.
+- Schema v3 adds explicitly declared TCP/UDP ports, path claims and incompatible version ranges. Reverse conflicts checked before mutation. Does not inspect unmanaged live processes.
