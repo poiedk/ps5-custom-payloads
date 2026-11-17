@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "policy": "Review only; no automatic install or catalog publication.",
+  "candidates": [
+    {
+      "id": "omnipad",
+      "repo": "diegobarbosaa/OmniPad-PS5",
+      "asset_pattern": "OmniPad-PS5(?:-v?[0-9]+(?:\\.[0-9]+)*)?\\.elf",
+      "kind": "standalone",
+      "status": "verify release metadata and prerelease selection"
+    },
+    {
+      "id": "lz4-compression",
+      "repo": "porkchop315/ps5-lz4-compression",
+      "kind": "standalone-plus-optional-bundle",
+      "asset_pattern": "lz4-compression\\.elf",
+      "companion_asset": "LZ4-Compression-PPSA99420.zip",
+      "status": "verify current canonical host and asset digests"
+    },
+    {
+      "id": "prosperostore",
+      "repo": "darkxex/ProsperoStore",
+      "kind": "app-bundle",
+      "asset_pattern": "PPSA99000\\.zip",
+      "status": "verify current release and attestation; prefer upstream installer"
+    },
+    {
+      "id": "nasbridge",
+      "repo": "J7mbo/nasbridge-ps5",
+      "kind": "standalone",
+      "asset_pattern": "NASBridge-[A-Za-z0-9._-]+\\.elf",
+      "status": "verify release, intended use and firmware support"
+    }
+  ]
+}
