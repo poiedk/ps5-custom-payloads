@@ -73,6 +73,8 @@ jobs:
             payloadforge/native/zip.h
             payloadforge/native/manifest.c
             payloadforge/native/manifest.h
+            payloadforge/native/store.c
+            payloadforge/native/store.h
             payloadforge/native/preflight.c
             payloadforge/native/Makefile
             payloadforge/COPYING
