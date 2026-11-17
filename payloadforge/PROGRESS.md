@@ -116,3 +116,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Actual log: `Ran 177 tests in 6.181s` / `OK`.
 - ZIP_STORED, ASCII paths, standard 32-bit, contiguous entries only. No compression, ZIP64, extra fields, explicit dirs, symlinks or special files. CRC and duplicate/prefix checks. No filesystem writes.
 - Native DEFLATE/TAR.GZ remain unimplemented; host updater retains broader support.
+
+## N3: native manifest and read-only bundle verifier
+- CI verified: [run 44177098894](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44177098894), commit eb2f797. All three jobs passed.
+- Actual log: `Ran 189 tests in 5.973s` / `OK`; native smoke build succeeded, artifact 14370212500, ELF SHA-256 70ff99672b240d2fc914fad2370092cb54ca1c1ebc79867967cb73d8941c8b81.
+- Strict ASCII JSON subset, schemas 1–3 with empty dependencies/resources/conflicts only. Invalid keys, duplicates, path overlap and executable companions rejected. Independently supplied archive and manifest SHA-256 plus exact member size/hash.
+- No file writes. Nonempty constraints and compressed archives fail closed until native support exists.
