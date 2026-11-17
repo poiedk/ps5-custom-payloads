@@ -45,7 +45,7 @@
     "id": "omnipad",
     "repo": "diegobarbosaa/OmniPad-PS5",
     "name": "OmniPad",
-    "pattern": "OmniPad-PS5\\.elf",
+    "pattern": "OmniPad-PS5(?:-v?[0-9]+(?:\\.[0-9]+)*)?\\.elf",
     "prerelease": false
   },
   {
