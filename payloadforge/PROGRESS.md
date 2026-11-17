@@ -142,3 +142,8 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - [Run 44180511787](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44180511787), commit 713dc23. Host `Ran 222 tests in 12.498s` / `OK`; SDK native preflight compiled.
 - Independent, content-addressed snapshots of registered data with actual byte hashes (including mutable configs). Manual backup and verification APIs, automatic pre-update snapshot, idempotent reuse only after verifying existing snapshot. Corrupt snapshots block updates.
 - Caller must serialize threads and quiesce the managed app. Backup is linked in native library but not invoked by the read-only PS5 ELF. Hardware not tested.
+
+## N7: native rollback with self-contained snapshots
+- [Run 44181080867](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44181080867), commit fa79fe0. Host `Ran 229 tests in 8.826s` / `OK`; SDK cross-compile succeeded, ELF SHA-256 38778e54a5933ba90bfc18b16e4b91b820b5bad07bba66c2f2d046b57f9770e8.
+- Snapshots now bind the original upstream manifest and archive hash metadata as well as actual data and registry. Development-only older snapshot format is rejected; no console migration required.
+- Rollback verifies snapshot independently of the old generation, backs up current state, merges latest preserved config, and atomically activates a fresh generation. Simulated failure before activation retains current marker. Physical power-loss and PS5 operation remain untested.
