@@ -20,4 +20,10 @@ int pf_rollback(int rootfd,const char *id,const char *snapshot);
 /* 0 deactivated/removed; 1 deactivated with incomplete cleanup; -2 not active.
  * -3 means pointer durability uncertain, and no cleanup is performed. */
 int pf_uninstall(int rootfd,const char *id,int keep_config,size_t *removed);
+int pf_install_upgrade(int rootfd,const unsigned char *archive,size_t archive_n,const char *archive_sha,
+ const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
+int pf_install_downgrade(int rootfd,const unsigned char *archive,size_t archive_n,const char *archive_sha,
+ const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
+/* Status: 1 active, 0 absent/uninstalled, -1 invalid state. */
+int pf_status(int rootfd,const char *id,char version[65],char generation[65]);
 #endif
