@@ -3,9 +3,12 @@
 #define PF_STORE_H
 #include <stddef.h>
 /* Private, pre-opened directory fd. Never accepts destination paths from a manifest.
- * Initial-install-only native transaction. 0 success, -1 failure,
- * -2 package already active, -3 activation durability uncertain; inspect before retry.
+ * Initial install or explicit update (private, serialized caller). 0 success, -1 failure,
+ * -2 wrong install/update state, -3 activation durability uncertain; inspect before retry.
  */
 int pf_install_initial(int rootfd,const unsigned char *archive,size_t archive_n,const char *archive_sha,
+ const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
+/* Update requires all previous preserved paths to remain explicitly preserved. */
+int pf_update(int rootfd,const unsigned char *archive,size_t archive_n,const char *archive_sha,
  const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
 #endif
