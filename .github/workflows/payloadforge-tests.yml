@@ -2,9 +2,9 @@ name: PayloadForge tests
 on:
   push:
     branches: ['dev/payloadforge']
-    paths: ['payloadforge/**', '.github/workflows/payloadforge-tests.yml']
+    paths: ['payloadforge/**', 'zip_release.py', 'update.py', '.github/workflows/payloadforge-tests.yml', '.github/workflows/update.yml']
   pull_request:
-    paths: ['payloadforge/**', '.github/workflows/payloadforge-tests.yml']
+    paths: ['payloadforge/**', 'zip_release.py', 'update.py', '.github/workflows/payloadforge-tests.yml', '.github/workflows/update.yml']
 permissions:
   contents: read
 jobs:
@@ -12,4 +12,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: python3 -m pip install 'Pillow>=11,<13'
       - run: python3 -m unittest discover -s payloadforge -p 'test_*.py' -v
