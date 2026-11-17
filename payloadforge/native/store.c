@@ -141,19 +141,35 @@ static int lower_hash(const char *hash){
  for(size_t i=0;i<64;i++)if(hash[i]>='A'&&hash[i]<='F')return 0;
  return 1;
 }
-static void snapshot_id(const char *generation,const char *registry_hash,char out[65]){
- char key[128];memcpy(key,generation,64);memcpy(key+64,registry_hash,64);
+static void snapshot_id(const char *generation,const char *registry_hash,const char *ah,const char *mh,char out[65]){
+ char key[256];memcpy(key,generation,64);memcpy(key+64,registry_hash,64);
+ memcpy(key+128,ah,64);memcpy(key+192,mh,64);
  pf_sha256_hex(key,sizeof key,out);
+}
+static int registry_compatible(const pf_manifest *up,const pf_file *original,const pf_manifest *effective,const pf_file *files){
+ if(strcmp(up->id,effective->id)||strcmp(up->version,effective->version))return 0;
+ for(size_t i=0;i<up->count;i++){
+  int j=find_file(files,effective->count,original[i].path);
+  if(j<0||files[j].preserve!=original[i].preserve)return 0;
+  if(!original[i].preserve&&(files[j].size!=original[i].size||strcmp(files[j].sha256,original[i].sha256)))return 0;
+ }
+ for(size_t i=0;i<effective->count;i++)if(find_file(original,up->count,files[i].path)<0&&!files[i].preserve)return 0;
+ return 1;
 }
 /* Verify exact registered bytes (including preserved configuration) in a snapshot. */
 static int verify_snapshot(int backups,const char *id,const char *snapshot,pf_manifest *plan,pf_file *files,char generation[65]){
- int rc=-1,dir=-1,data=-1;size_t n;char rh[65],expected[65];unsigned char *raw=NULL;
+ int rc=-1,dir=-1,data=-1;size_t n,mn;char rh[65],ah[65],mh[65],expected[65];unsigned char *raw=NULL,*upstream=NULL;
+ pf_file *original=NULL;pf_manifest up;
  if(!lower_hash(snapshot))return -1;
  dir=dir_at(backups,snapshot,0);if(dir<0)goto done;
  if(read_hash(dir,"generation.sha256",generation)||!lower_hash(generation)||read_hash(dir,"registry.sha256",rh)||!lower_hash(rh))goto done;
- snapshot_id(generation,rh,expected);if(strcmp(expected,snapshot))goto done;
+ if(read_hash(dir,"archive.sha256",ah)||!lower_hash(ah)||read_hash(dir,"manifest.sha256",mh)||!lower_hash(mh))goto done;
+ snapshot_id(generation,rh,ah,mh,expected);if(strcmp(expected,snapshot))goto done;
  raw=read_file(dir,"registry.json",PF_MANIFEST_LIMIT,&n);
  if(!raw||!pf_sha256_matches(raw,n,rh)||pf_manifest_parse(raw,n,plan,files,PF_ZIP_MAX_MEMBERS)||strcmp(plan->id,id))goto done;
+ original=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*original));
+ upstream=read_file(dir,"manifest.json",PF_MANIFEST_LIMIT,&mn);
+ if(!original||!upstream||!pf_sha256_matches(upstream,mn,mh)||pf_manifest_parse(upstream,mn,&up,original,PF_ZIP_MAX_MEMBERS)||!registry_compatible(&up,original,plan,files))goto done;
  data=dir_at(dir,"data",0);if(data<0)goto done;
  for(size_t i=0;i<plan->count;i++){
   size_t len;unsigned char *p=read_member(data,files[i].path,&len);
@@ -162,15 +178,18 @@ static int verify_snapshot(int backups,const char *id,const char *snapshot,pf_ma
   free(p);if(!valid)goto done;
  }
  rc=0;
- done:free(raw);if(data>=0)close(data);if(dir>=0)close(dir);return rc;
+ done:free(original);free(upstream);free(raw);if(data>=0)close(data);if(dir>=0)close(dir);return rc;
 }
 /* Must be called under store lock; caller must quiesce the managed application.
  * Snapshots are independent copies with actual content hashes, never hardlinks. */
-static int snapshot_locked(int app,const char *generation,const pf_manifest *plan,const pf_file *prior,int source,char out[65]){
+static int snapshot_locked(int app,const char *generation,const pf_manifest *plan,const pf_file *prior,int source_gen,int source,char out[65]){
  int rc=-1,backups=-1,stage=-1,data=-1;pf_file *files=NULL,*check=NULL;
- unsigned char *raw=NULL;size_t n=0,total=0;char rh[65],name[65],staging[80],saved[65];pf_manifest verified;
+ unsigned char *raw=NULL,*upstream=NULL;size_t n=0,mn=0,total=0;char rh[65],ah[65],mh[65],name[65],staging[80],saved[65];pf_manifest verified;
  files=calloc(plan->count,sizeof(*files));check=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*check));
  if(!files||!check||!lower_hash(generation))goto done;
+ if(read_hash(source_gen,"archive.sha256",ah)||!lower_hash(ah)||read_hash(source_gen,"manifest.sha256",mh)||!lower_hash(mh))goto done;
+ upstream=read_file(source_gen,"manifest.json",PF_MANIFEST_LIMIT,&mn);
+ if(!upstream||!pf_sha256_matches(upstream,mn,mh))goto done;
  memcpy(files,prior,plan->count*sizeof(*files));
  for(size_t i=0;i<plan->count;i++){
   size_t len;unsigned char *p=read_member(source,files[i].path,&len);
@@ -181,7 +200,7 @@ static int snapshot_locked(int app,const char *generation,const pf_manifest *pla
  }
  raw=registry(plan,files,plan->count,&n);
  if(!raw||pf_manifest_parse(raw,n,&verified,check,PF_ZIP_MAX_MEMBERS))goto done;
- pf_sha256_hex(raw,n,rh);snapshot_id(generation,rh,name);
+ pf_sha256_hex(raw,n,rh);snapshot_id(generation,rh,ah,mh,name);
  backups=dir_at(app,"backups",1);if(backups<0||fsync(app))goto done;
  int exists=exists_at(backups,name);
  if(exists<0)goto done;
@@ -195,13 +214,13 @@ static int snapshot_locked(int app,const char *generation,const pf_manifest *pla
    int valid=len==files[i].size&&pf_sha256_matches(p,len,files[i].sha256)&&!put_data(data,files+i,p,len);
    free(p);if(!valid)goto done;
   }
-  if(fsync(data)||new_file(stage,"registry.json",raw,n)||new_file(stage,"registry.sha256",rh,64)||new_file(stage,"generation.sha256",generation,64)||fsync(stage))goto done;
+  if(fsync(data)||new_file(stage,"registry.json",raw,n)||new_file(stage,"registry.sha256",rh,64)||new_file(stage,"generation.sha256",generation,64)||new_file(stage,"manifest.json",upstream,mn)||new_file(stage,"manifest.sha256",mh,64)||new_file(stage,"archive.sha256",ah,64)||fsync(stage))goto done;
   if(renameat(backups,staging,backups,name)||fsync(backups))goto done;
  }
  if(verify_snapshot(backups,plan->id,name,&verified,check,saved))goto done;
  memcpy(out,name,65);rc=0;
  done:if(data>=0)close(data);if(stage>=0)close(stage);if(backups>=0)close(backups);
- free(raw);free(check);free(files);return rc;
+ free(upstream);free(raw);free(check);free(files);return rc;
 }
 static int open_root_lock(int root){
  struct stat st;
@@ -224,7 +243,7 @@ int pf_backup(int root,const char *id,char out[65]){
  gen=dir_at(gens,current,0);if(gen<0)goto done;
  files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));if(!files||load_generation(gen,current,id,&plan,files))goto done;
  data=dir_at(gen,"data",0);if(data<0)goto done;
- rc=snapshot_locked(app,current,&plan,files,data,out);
+ rc=snapshot_locked(app,current,&plan,files,gen,data,out);
  done:if(data>=0)close(data);if(gen>=0)close(gen);if(gens>=0)close(gens);if(app>=0)close(app);if(apps>=0)close(apps);if(lock>=0)close(lock);
  free(files);return rc;
 }
@@ -281,7 +300,7 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
     if(index<0){if(plan.count>=PF_ZIP_MAX_MEMBERS)goto done;files[plan.count++]=old[i];}
    }
   }
-  char backup[65];if(snapshot_locked(app,current_id,&prior,old,prior_data,backup))goto done;
+  char backup[65];if(snapshot_locked(app,current_id,&prior,old,previous,prior_data,backup))goto done;
  }
  /* Content-addressed initial generation; updates bind predecessor and manifest. */
  char generation[65],staging[80],pointer[80];
@@ -342,4 +361,67 @@ int pf_install_update(int root,const unsigned char *a,size_t an,const char *ah,c
 }
 int pf_update(int root,const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh){
  return pf_install_update(root,a,an,ah,m,mn,mh);
+}
+
+/* Restore a verified snapshot into a fresh generation, retaining current
+ * user settings. A snapshot contains upstream provenance independently of
+ * its source generation. All native manifests currently reject dependencies.
+ */
+int pf_rollback(int root,const char *id,const char *snapshot){
+ if(!id||!pf_id_valid(id,strlen(id))||!lower_hash(snapshot))return -1;
+ int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,previous=-1,prior_data=-1,backups=-1,target=-1,target_data=-1,stage=-1,data=-1;
+ pf_file *files=NULL,*old=NULL,*check=NULL;pf_manifest plan,prior,validated;
+ char current[65],source[65],ah[65],mh[65],rh[65],generation[65],previous_backup[65],staging[80],pointer[80];
+ size_t mn=0,rn=0,total=0;unsigned char *manifest=NULL,*effective=NULL;
+ lock=open_root_lock(root);if(lock<0)goto done;
+ apps=dir_at(root,"apps",0);if(apps<0)goto done;
+ app=dir_at(apps,id,0);if(app<0||read_hash(app,"CURRENT",current)||!lower_hash(current))goto done;
+ gens=dir_at(app,"generations",0);if(gens<0)goto done;
+ backups=dir_at(app,"backups",0);if(backups<0)goto done;
+ files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));old=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*old));check=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*check));
+ if(!files||!old||!check||verify_snapshot(backups,id,snapshot,&plan,files,source))goto done;
+ target=dir_at(backups,snapshot,0);if(target<0||read_hash(target,"archive.sha256",ah)||read_hash(target,"manifest.sha256",mh))goto done;
+ manifest=read_file(target,"manifest.json",PF_MANIFEST_LIMIT,&mn);
+ if(!manifest||!pf_sha256_matches(manifest,mn,mh))goto done;
+ target_data=dir_at(target,"data",0);if(target_data<0)goto done;
+ previous=dir_at(gens,current,0);if(previous<0||load_generation(previous,current,id,&prior,old))goto done;
+ prior_data=dir_at(previous,"data",0);if(prior_data<0)goto done;
+ for(size_t i=0;i<prior.count;i++)if(old[i].preserve){
+  int j=find_file(files,plan.count,old[i].path);
+  if(j>=0&&!files[j].preserve)goto done;
+  if(j<0){if(plan.count>=PF_ZIP_MAX_MEMBERS)goto done;files[plan.count++]=old[i];}
+ }
+ if(snapshot_locked(app,current,&prior,old,previous,prior_data,previous_backup))goto done;
+ char key[136];memcpy(key,"rollback",8);memcpy(key+8,current,64);memcpy(key+72,snapshot,64);
+ pf_sha256_hex(key,sizeof key,generation);
+ if(snprintf(staging,sizeof staging,".stage-%s",generation)<0||snprintf(pointer,sizeof pointer,".pointer-%s",generation)<0||exists_at(gens,generation)!=0||mkdirat(gens,staging,0700))goto done;
+ stage=dir_at(gens,staging,0);if(stage<0)goto done;
+ data=dir_at(stage,"data",1);if(data<0)goto done;
+ for(size_t i=0;i<plan.count;i++){
+  pf_file *file=files+i;int j=find_file(old,prior.count,file->path);
+  int preserve=j>=0&&old[j].preserve;size_t n;
+  unsigned char *raw=read_member(preserve?prior_data:target_data,file->path,&n);if(!raw)goto done;
+  int valid=n<=PF_ZIP_MAX_TOTAL-total&&(preserve||(n==file->size&&pf_sha256_matches(raw,n,file->sha256)));
+  if(valid){file->size=n;pf_sha256_hex(raw,n,file->sha256);total+=n;valid=!put_data(data,file,raw,n);}
+  free(raw);if(!valid)goto done;
+ }
+ effective=registry(&plan,files,plan.count,&rn);
+ if(!effective||pf_manifest_parse(effective,rn,&validated,check,PF_ZIP_MAX_MEMBERS))goto done;
+ pf_sha256_hex(effective,rn,rh);
+ if(fsync(data)||new_file(stage,"registry.json",effective,rn)||new_file(stage,"registry.sha256",rh,64)||new_file(stage,"manifest.json",manifest,mn)||new_file(stage,"manifest.sha256",mh,64)||new_file(stage,"archive.sha256",ah,64)||fsync(stage))goto done;
+ if(renameat(gens,staging,gens,generation)||fsync(gens)||new_file(app,pointer,generation,64)||renameat(app,pointer,app,"CURRENT"))goto done;
+ rc=fsync(app)?-3:0;
+ done:
+ if(data>=0)close(data);
+ if(stage>=0)close(stage);
+ if(target_data>=0)close(target_data);
+ if(target>=0)close(target);
+ if(backups>=0)close(backups);
+ if(prior_data>=0)close(prior_data);
+ if(previous>=0)close(previous);
+ if(gens>=0)close(gens);
+ if(app>=0)close(app);
+ if(apps>=0)close(apps);
+ if(lock>=0)close(lock);
+ free(effective);free(manifest);free(check);free(old);free(files);return rc;
 }
