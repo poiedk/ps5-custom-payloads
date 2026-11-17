@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "id": "demo",
+  "version": "v1.0",
+  "files": [
+    {
+      "path": "settings.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "size": 12,
+      "policy": "preserve"
+    }
+  ]
+}
