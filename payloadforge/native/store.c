@@ -136,6 +136,110 @@ static int load_generation(int gen,const char *generation,const char *id,pf_mani
 }
 
 
+static int lower_hash(const char *hash){
+ if(!hash||!pf_sha_valid(hash,strlen(hash)))return 0;
+ for(size_t i=0;i<64;i++)if(hash[i]>='A'&&hash[i]<='F')return 0;
+ return 1;
+}
+static void snapshot_id(const char *generation,const char *registry_hash,char out[65]){
+ char key[128];memcpy(key,generation,64);memcpy(key+64,registry_hash,64);
+ pf_sha256_hex(key,sizeof key,out);
+}
+/* Verify exact registered bytes (including preserved configuration) in a snapshot. */
+static int verify_snapshot(int backups,const char *id,const char *snapshot,pf_manifest *plan,pf_file *files,char generation[65]){
+ int rc=-1,dir=-1,data=-1;size_t n;char rh[65],expected[65];unsigned char *raw=NULL;
+ if(!lower_hash(snapshot))return -1;
+ dir=dir_at(backups,snapshot,0);if(dir<0)goto done;
+ if(read_hash(dir,"generation.sha256",generation)||!lower_hash(generation)||read_hash(dir,"registry.sha256",rh)||!lower_hash(rh))goto done;
+ snapshot_id(generation,rh,expected);if(strcmp(expected,snapshot))goto done;
+ raw=read_file(dir,"registry.json",PF_MANIFEST_LIMIT,&n);
+ if(!raw||!pf_sha256_matches(raw,n,rh)||pf_manifest_parse(raw,n,plan,files,PF_ZIP_MAX_MEMBERS)||strcmp(plan->id,id))goto done;
+ data=dir_at(dir,"data",0);if(data<0)goto done;
+ for(size_t i=0;i<plan->count;i++){
+  size_t len;unsigned char *p=read_member(data,files[i].path,&len);
+  if(!p)goto done;
+  int valid=len==files[i].size&&pf_sha256_matches(p,len,files[i].sha256);
+  free(p);if(!valid)goto done;
+ }
+ rc=0;
+ done:free(raw);if(data>=0)close(data);if(dir>=0)close(dir);return rc;
+}
+/* Must be called under store lock; caller must quiesce the managed application.
+ * Snapshots are independent copies with actual content hashes, never hardlinks. */
+static int snapshot_locked(int app,const char *generation,const pf_manifest *plan,const pf_file *prior,int source,char out[65]){
+ int rc=-1,backups=-1,stage=-1,data=-1;pf_file *files=NULL,*check=NULL;
+ unsigned char *raw=NULL;size_t n=0,total=0;char rh[65],name[65],staging[80],saved[65];pf_manifest verified;
+ files=calloc(plan->count,sizeof(*files));check=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*check));
+ if(!files||!check||!lower_hash(generation))goto done;
+ memcpy(files,prior,plan->count*sizeof(*files));
+ for(size_t i=0;i<plan->count;i++){
+  size_t len;unsigned char *p=read_member(source,files[i].path,&len);
+  if(!p)goto done;
+  int valid=(files[i].preserve||(len==files[i].size&&pf_sha256_matches(p,len,files[i].sha256)))&&len<=PF_ZIP_MAX_TOTAL-total;
+  if(valid){files[i].size=len;total+=len;pf_sha256_hex(p,len,files[i].sha256);}
+  free(p);if(!valid)goto done;
+ }
+ raw=registry(plan,files,plan->count,&n);
+ if(!raw||pf_manifest_parse(raw,n,&verified,check,PF_ZIP_MAX_MEMBERS))goto done;
+ pf_sha256_hex(raw,n,rh);snapshot_id(generation,rh,name);
+ backups=dir_at(app,"backups",1);if(backups<0||fsync(app))goto done;
+ int exists=exists_at(backups,name);
+ if(exists<0)goto done;
+ if(!exists){
+  if(snprintf(staging,sizeof staging,".stage-%s",name)<0||mkdirat(backups,staging,0700))goto done;
+  stage=dir_at(backups,staging,0);if(stage<0)goto done;
+  data=dir_at(stage,"data",1);if(data<0)goto done;
+  for(size_t i=0;i<plan->count;i++){
+   size_t len;unsigned char *p=read_member(source,files[i].path,&len);
+   if(!p)goto done;
+   int valid=len==files[i].size&&pf_sha256_matches(p,len,files[i].sha256)&&!put_data(data,files+i,p,len);
+   free(p);if(!valid)goto done;
+  }
+  if(fsync(data)||new_file(stage,"registry.json",raw,n)||new_file(stage,"registry.sha256",rh,64)||new_file(stage,"generation.sha256",generation,64)||fsync(stage))goto done;
+  if(renameat(backups,staging,backups,name)||fsync(backups))goto done;
+ }
+ if(verify_snapshot(backups,plan->id,name,&verified,check,saved))goto done;
+ memcpy(out,name,65);rc=0;
+ done:if(data>=0)close(data);if(stage>=0)close(stage);if(backups>=0)close(backups);
+ free(raw);free(check);free(files);return rc;
+}
+static int open_root_lock(int root){
+ struct stat st;
+ if(fstat(root,&st)||!S_ISDIR(st.st_mode)||st.st_uid!=geteuid()||(st.st_mode&0077))return -1;
+ int lock=openat(root,".lock",O_RDWR|O_CREAT|O_NOFOLLOW|O_CLOEXEC|O_NONBLOCK,0600);
+ if(lock<0)return -1;
+ if(!is_regular(lock)||fstat(lock,&st)||st.st_uid!=geteuid()||st.st_nlink!=1||lock_exclusive(lock)){close(lock);return -1;}
+ return lock;
+}
+int pf_backup(int root,const char *id,char out[65]){
+ if(!out)return -1;
+ out[0]=0;
+ if(!id||!pf_id_valid(id,strlen(id)))return -1;
+ int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,gen=-1,data=-1;
+ pf_file *files=NULL;pf_manifest plan;char current[65];
+ lock=open_root_lock(root);if(lock<0)goto done;
+ apps=dir_at(root,"apps",0);if(apps<0)goto done;
+ app=dir_at(apps,id,0);if(app<0||read_hash(app,"CURRENT",current)||!lower_hash(current))goto done;
+ gens=dir_at(app,"generations",0);if(gens<0)goto done;
+ gen=dir_at(gens,current,0);if(gen<0)goto done;
+ files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));if(!files||load_generation(gen,current,id,&plan,files))goto done;
+ data=dir_at(gen,"data",0);if(data<0)goto done;
+ rc=snapshot_locked(app,current,&plan,files,data,out);
+ done:if(data>=0)close(data);if(gen>=0)close(gen);if(gens>=0)close(gens);if(app>=0)close(app);if(apps>=0)close(apps);if(lock>=0)close(lock);
+ free(files);return rc;
+}
+int pf_backup_verify(int root,const char *id,const char *snapshot){
+ if(!id||!pf_id_valid(id,strlen(id))||!lower_hash(snapshot))return -1;
+ int rc=-1,lock=-1,apps=-1,app=-1,backups=-1;pf_file *files=NULL;pf_manifest plan;char generation[65];
+ lock=open_root_lock(root);if(lock<0)goto done;
+ apps=dir_at(root,"apps",0);if(apps<0)goto done;
+ app=dir_at(apps,id,0);if(app<0)goto done;
+ backups=dir_at(app,"backups",0);if(backups<0)goto done;
+ files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));if(!files)goto done;
+ rc=verify_snapshot(backups,id,snapshot,&plan,files,generation);
+ done:if(backups>=0)close(backups);if(app>=0)close(app);if(apps>=0)close(apps);if(lock>=0)close(lock);free(files);return rc;
+}
+
 /* Failed staging directories are deliberately retained for explicit inspection.
  * A partial stage can never become active; no recursive deletion is performed.
  */
@@ -153,8 +257,7 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  if(pf_bundle_verify(archive,an,ah,manifest,mn,mh,&plan,files,PF_ZIP_MAX_MEMBERS))goto done;
  entries=calloc(plan.count,sizeof(*entries));if(!entries)goto done;
  if(pf_zip_scan(archive,an,entries,plan.count,&count)||count!=plan.count)goto done;
- lock=openat(root,".lock",O_RDWR|O_CREAT|O_NOFOLLOW|O_CLOEXEC|O_NONBLOCK,0600);
- if(lock<0||!is_regular(lock)||lock_exclusive(lock))goto done;
+ lock=open_root_lock(root);if(lock<0)goto done;
  apps=dir_at(root,"apps",1);if(apps<0||fsync(root))goto done;
  app=dir_at(apps,plan.id,1);if(app<0||fsync(apps))goto done;
  int current=exists_at(app,"CURRENT");
@@ -162,7 +265,7 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  gens=dir_at(app,"generations",1);if(gens<0||fsync(app))goto done;
  if(update){
   old=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*old));if(!old)goto done;
-  if(read_hash(app,"CURRENT",current_id))goto done;
+  if(read_hash(app,"CURRENT",current_id)||!lower_hash(current_id))goto done;
   previous=dir_at(gens,current_id,0);if(previous<0||load_generation(previous,current_id,plan.id,&prior,old))goto done;
   if(!strcmp(prior.version,plan.version))goto done;
   prior_data=dir_at(previous,"data",0);if(prior_data<0)goto done;
@@ -178,6 +281,7 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
     if(index<0){if(plan.count>=PF_ZIP_MAX_MEMBERS)goto done;files[plan.count++]=old[i];}
    }
   }
+  char backup[65];if(snapshot_locked(app,current_id,&prior,old,prior_data,backup))goto done;
  }
  /* Content-addressed initial generation; updates bind predecessor and manifest. */
  char generation[65],staging[80],pointer[80];
