@@ -5,7 +5,7 @@ This host-side prototype is not a native PS5 installer.
 """
 import re
 from pathlib import PurePosixPath
-from archive import safe_name
+from payloadforge.archive import safe_name
 
 ID = re.compile(r"[a-z0-9][a-z0-9-]{0,47}")
 SHA = re.compile(r"[a-f0-9]{64}")
