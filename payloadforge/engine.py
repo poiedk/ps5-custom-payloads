@@ -21,6 +21,7 @@ from .archive import MAX_MEMBER, MAX_TOTAL, safe_name
 from .manifest import ID, validate
 from .bundle import verify_bundle
 from .conflicts import validate_state
+from .dependencies import version_key
 
 GEN = re.compile(r"[a-f0-9]{32}")
 def digest(raw): return hashlib.sha256(raw).hexdigest()
@@ -218,7 +219,8 @@ class Engine:
                 raise RuntimeError("activation recovery requires inspection; generations retained") from recovery
             raise
         return record
-    def install(self,raw,archive_sha256,manifest):
+    def install(self,raw,archive_sha256,manifest,*,action="apply"):
+        if action not in ("apply","install","upgrade","downgrade"):raise ValueError("invalid install action")
         plan=verify_bundle(raw,archive_sha256,manifest)
         files={}
         with zipfile.ZipFile(io.BytesIO(raw)) as z:
@@ -227,7 +229,13 @@ class Engine:
                 if len(data)!=f["size"] or digest(data)!=f["sha256"]:raise ValueError("bundle changed")
                 files[f["relative_path"]]=(data,f["policy"])
         with self.locked():
-            validate_state(self._installed(),{plan["id"]:{k:plan[k] for k in ("version","dependencies","resources","conflicts")}})
+            installed=self._installed();old=installed.get(plan["id"])
+            if action=="install" and old:raise ValueError("already installed; choose upgrade or downgrade")
+            if action in ("upgrade","downgrade"):
+                if not old:raise ValueError("not installed")
+                new_v,old_v=version_key(plan["version"]),version_key(old["version"])
+                if (action=="upgrade" and new_v<=old_v) or (action=="downgrade" and new_v>=old_v):raise ValueError("version direction mismatch")
+            validate_state(installed,{plan["id"]:{k:plan[k] for k in ("version","dependencies","resources","conflicts")}})
             app=self._app(plan["id"],True)
             current=self._pointer(app)
             if current:
@@ -291,6 +299,19 @@ class Engine:
                     if re.fullmatch(r"\.stage-[a-f0-9]{32}",entry.name):stage.append(name+"/"+entry.name)
                     elif name=="generations" and GEN.fullmatch(entry.name) and entry.name!=current:inactive.append(entry.name)
             return {"id":app_id,"current":current,"staged":stage,"inactive_generations":inactive}
+    def list_installed(self):
+        with self.locked():return [v for _,v in sorted(self._installed().items())]
+    def versions(self,app_id):
+        with self.locked():
+            app=self._app(app_id);current=self._pointer(app);folder=app/"backups"
+            active=self._state(app,current)[0] if current else None
+            backups=[]
+            if folder.exists():
+                for p in sorted(directory(folder).iterdir()):
+                    if GEN.fullmatch(p.name):
+                        meta,_=self._read_snapshot(app,p.name)
+                        backups.append({"snapshot":meta["snapshot"],"version":meta["record"]["version"],"created_at":meta["created_at"]})
+            return {"active":active,"backups":sorted(backups,key=lambda x:x["created_at"],reverse=True)}
     def status(self,app_id):
         with self.locked():
             app=self._app(app_id)
