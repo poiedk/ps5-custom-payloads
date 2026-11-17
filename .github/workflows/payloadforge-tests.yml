@@ -37,7 +37,8 @@ jobs:
           asset=assets[0]
           expected=asset.get("digest","")
           url="https://github.com/ps5-payload-dev/sdk/releases/download/"+tag+"/ps5-payload-sdk.zip"
-          if asset["browser_download_url"]!=url or not re.fullmatch(r"sha256:[0-9a-fA-F]{64}",expected): raise SystemExit("SDK checksum unavailable")
+          pinned="sha256:8cfbc7cd5811e719eb4f0c47eea668d3dc7b40bc8ab11c4a5031d40c23ec02da"
+          if asset["browser_download_url"]!=url or expected.lower()!=pinned: raise SystemExit("SDK checksum missing or changed")
           limit=256*1024*1024
           if not 0<asset["size"]<=limit:raise SystemExit("SDK size limit")
           with urllib.request.urlopen(url,timeout=120) as r:
@@ -52,7 +53,8 @@ jobs:
       - name: Cross-compile read-only PS5 preflight
         run: |
           export PS5_PAYLOAD_SDK="$RUNNER_TEMP/sdk/ps5-payload-sdk"
-          export LLVM_CONFIG=llvm-config-18
+          export LLVM_CONFIG="$(command -v llvm-config-18)"
+          test -x "$LLVM_CONFIG"
           make -C payloadforge/native ps5
           cd payloadforge/native/build
           readelf -h payloadforge-preflight.elf
@@ -63,4 +65,9 @@ jobs:
           path: |
             payloadforge/native/build/payloadforge-preflight.elf
             payloadforge/native/build/SHA256SUMS
+            payloadforge/native/core.c
+            payloadforge/native/core.h
+            payloadforge/native/preflight.c
+            payloadforge/native/Makefile
+            payloadforge/COPYING
           if-no-files-found: error
