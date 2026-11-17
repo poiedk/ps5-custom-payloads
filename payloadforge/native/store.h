@@ -1,0 +1,29 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+#ifndef PF_STORE_H
+#define PF_STORE_H
+#include <stddef.h>
+/* Private, pre-opened directory fd. Never accepts destination paths from a manifest.
+ * Initial install or explicit update (private, serialized caller). 0 success, -1 failure,
+ * -2 wrong install/update state, -3 activation durability uncertain; inspect before retry.
+ */
+int pf_install_initial(int rootfd,const unsigned char *archive,size_t archive_n,const char *archive_sha,
+ const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
+/* Update retains previously preserved paths even when omitted; policy demotion is rejected. */
+int pf_update(int rootfd,const unsigned char *archive,size_t archive_n,const char *archive_sha,
+ const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
+int pf_install_update(int rootfd,const unsigned char *archive,size_t archive_n,const char *archive_sha,
+ const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
+/* Snapshot is a verified independent copy. Caller serializes threads and quiesces app. */
+int pf_backup(int rootfd,const char *id,char snapshot[65]);
+int pf_backup_verify(int rootfd,const char *id,const char *snapshot);
+int pf_rollback(int rootfd,const char *id,const char *snapshot);
+/* 0 deactivated/removed; 1 deactivated with incomplete cleanup; -2 not active.
+ * -3 means pointer durability uncertain, and no cleanup is performed. */
+int pf_uninstall(int rootfd,const char *id,int keep_config,size_t *removed);
+int pf_install_upgrade(int rootfd,const unsigned char *archive,size_t archive_n,const char *archive_sha,
+ const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
+int pf_install_downgrade(int rootfd,const unsigned char *archive,size_t archive_n,const char *archive_sha,
+ const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
+/* Status: 1 active, 0 absent/uninstalled, -1 invalid state. */
+int pf_status(int rootfd,const char *id,char version[65],char generation[65]);
+#endif

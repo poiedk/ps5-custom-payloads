@@ -1,0 +1,100 @@
+name: PayloadForge tests
+on:
+  push:
+    branches: ['dev/payloadforge']
+    paths: ['payloadforge/**', 'zip_release.py', 'update.py', '.github/workflows/payloadforge-tests.yml', '.github/workflows/update.yml']
+  pull_request:
+    paths: ['payloadforge/**', 'zip_release.py', 'update.py', '.github/workflows/payloadforge-tests.yml', '.github/workflows/update.yml']
+permissions:
+  contents: read
+jobs:
+  archive-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m pip install 'Pillow>=11,<13'
+      - run: python3 -m unittest discover -s payloadforge -p 'test_*.py' -v
+      - run: make -C payloadforge/native host
+  native-preflight:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install official SDK prerequisites
+        run: sudo apt-get update && sudo apt-get install -y clang-18 lld-18 llvm-18 unzip
+      - name: Fetch pinned SDK and verify upstream asset digest
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,re,urllib.request
+          tag="v0.42"
+          api="https://api.github.com/repos/ps5-payload-dev/sdk/releases/tags/"+tag
+          req=urllib.request.Request(api,headers={"Authorization":"Bearer "+os.environ["GITHUB_TOKEN"],"Accept":"application/vnd.github+json","User-Agent":"payloadforge-ci"})
+          with urllib.request.urlopen(req,timeout=30) as r:
+              release=json.load(r)
+          assets=[a for a in release["assets"] if a["name"]=="ps5-payload-sdk.zip"]
+          if release["tag_name"]!=tag or len(assets)!=1: raise SystemExit("unexpected SDK release")
+          asset=assets[0]
+          expected=asset.get("digest","")
+          url="https://github.com/ps5-payload-dev/sdk/releases/download/"+tag+"/ps5-payload-sdk.zip"
+          pinned="sha256:8cfbc7cd5811e719eb4f0c47eea668d3dc7b40bc8ab11c4a5031d40c23ec02da"
+          if asset["browser_download_url"]!=url or expected.lower()!=pinned: raise SystemExit("SDK checksum missing or changed")
+          limit=256*1024*1024
+          if not 0<asset["size"]<=limit:raise SystemExit("SDK size limit")
+          with urllib.request.urlopen(url,timeout=120) as r:
+              if not r.geturl().startswith("https://"):raise SystemExit("SDK HTTPS required")
+              raw=r.read(limit+1)
+          if len(raw)!=asset["size"] or hashlib.sha256(raw).hexdigest()!=expected[7:].lower():raise SystemExit("SDK digest mismatch")
+          path=pathlib.Path(os.environ["RUNNER_TEMP"])/"sdk.zip"
+          path.write_bytes(raw)
+          print("Official SDK "+tag+" SHA-256: "+expected[7:])
+          PY
+          unzip -q "$RUNNER_TEMP/sdk.zip" -d "$RUNNER_TEMP/sdk"
+      - name: Cross-compile read-only PS5 preflight
+        run: |
+          export PS5_PAYLOAD_SDK="$RUNNER_TEMP/sdk/ps5-payload-sdk"
+          export LLVM_CONFIG="$(command -v llvm-config-18)"
+          test -x "$LLVM_CONFIG"
+          make -C payloadforge/native ps5
+          cd payloadforge/native/build
+          readelf -h payloadforge-preflight.elf
+          sha256sum payloadforge-preflight.elf | tee SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: payloadforge-preflight-read-only
+          path: |
+            payloadforge/native/build/payloadforge-preflight.elf
+            payloadforge/native/build/SHA256SUMS
+            payloadforge/native/core.c
+            payloadforge/native/core.h
+            payloadforge/native/sha256.c
+            payloadforge/native/sha256.h
+            payloadforge/native/zip.c
+            payloadforge/native/zip.h
+            payloadforge/native/manifest.c
+            payloadforge/native/manifest.h
+            payloadforge/native/store.c
+            payloadforge/native/store.h
+            payloadforge/native/version.c
+            payloadforge/native/version.h
+            payloadforge/native/preflight.c
+            payloadforge/native/Makefile
+            payloadforge/COPYING
+          if-no-files-found: error
+  host-preview:
+    needs: [archive-tests, native-preflight]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package tested host source and synthetic fixtures
+        run: |
+          mkdir -p dist
+          git archive --format=tar.gz --prefix=payloadforge-host-preview/ HEAD payloadforge zip_release.py update.py payload_icons.py sources.json payloads_v2.json payloadforge_catalog.json > dist/payloadforge-0.1.0-alpha-host-source.tar.gz
+          python3 -m payloadforge.demo_fixture --out dist/fixtures
+          cd dist
+          sha256sum payloadforge-0.1.0-alpha-host-source.tar.gz | tee SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: payloadforge-0.1.0-alpha-host-preview
+          path: dist/
+          if-no-files-found: error
