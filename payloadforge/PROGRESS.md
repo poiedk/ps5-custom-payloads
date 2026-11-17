@@ -152,3 +152,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - [Run 44181579359](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44181579359), commit f55a4ef. Host `Ran 236 tests in 8.816s` / `OK`; native preflight cross-compile succeeded.
 - Verified backup followed by atomic deactivation marker. Cleanup only registry-listed regular, owner-owned single-link files; untracked files retained. Explicit config reuse or fresh defaults on reinstall; backups remain in both modes. Partial cleanup is reported.
 - Reinstall uses fresh identity and optional verified snapshot. Rollback while uninstalled and cleanup recovery after abrupt interruption still open. No PS5 execution.
+
+## N9: native version ordering and status
+- Initial run 44182087063 passed but collected nine imported update tests twice. Changed test import to avoid duplicate collection.
+- [Run 44182253046](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44182253046), commit 9e6622f. Actual host output: `Ran 242 tests in 9.822s` / `OK`; native preflight compiled. ELF SHA-256 3dffce53f2a85418a3e096f0bae59f581c10e7eecc095d5973b32813b717b258, artifact 14373091894.
+- Explicit upgrade/downgrade checks compare numeric components, prerelease and build metadata; Python cross-language vectors. Unknown version formats fail closed for ordered transitions; explicit generic update remains separate. Status reads verified registry metadata, not full data hashes.
+- Native N1–N9 implemented in C for strict data-only stored ZIP subset. Outstanding: native nonempty dependency/conflict metadata, compressed archives, recovery of interrupted staging/cleanup and rollback while uninstalled, executable runtime/harness, daemon/UI and live-catalog integration, approved app-owned mappings and hardware validation. No installer RC or console execution.
