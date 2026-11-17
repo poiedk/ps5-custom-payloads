@@ -100,4 +100,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 ## Stages 15–16 — planned hardware gate and host preview
 - HUMAN_TODO.md contains the hardware test plan; no PS5 test executed.
 - RC.md describes 0.1.0-alpha host preview and separate read-only native preflight. No full installer RC or stable release.
-- Fixture generator and tests committed; host candidate artifact workflow configured in dde33dd. Final result pending verification.
+- Final host-preview CI verified: [run 44169115873](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44169115873), tested commit dde33dd. All three jobs completed successfully.
+- Actual log: `Ran 162 tests in 5.814s` / `OK`; `PayloadForge native preflight: OK (read-only; not installer)`.
+- Host alpha artifact 14366697030, source TAR.GZ SHA-256: 58342ef8f33c726812b4bb819ac1001527c491a7df6e2dd5bec97de59db3bcc8.
+- Native read-only preflight artifact 14367276278, ELF SHA-256: 10f652db2aa064374ff08b2c468dc31c90d27b7087871f664fa0ca15fb8038d7.
+- Production verified unchanged: sources.json 37041fd, update.py 8d6bc48, status.json d4c93e8, nine payload IDs. OmniPad/LZ4 warnings remain. No merge, stable release or hardware operation.
+- Autonomous run ends with a verified host alpha and native smoke build, not a functional PS5 installer. Full native port and its dependent PS5 web/catalog integration remain engineering work, not simply hardware approval.
