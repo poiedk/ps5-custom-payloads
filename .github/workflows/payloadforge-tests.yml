@@ -71,3 +71,20 @@ jobs:
             payloadforge/native/Makefile
             payloadforge/COPYING
           if-no-files-found: error
+  host-preview:
+    needs: [archive-tests, native-preflight]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package tested host source and synthetic fixtures
+        run: |
+          mkdir -p dist
+          git archive --format=tar.gz --prefix=payloadforge-host-preview/ HEAD payloadforge zip_release.py update.py payload_icons.py sources.json payloads_v2.json payloadforge_catalog.json > dist/payloadforge-0.1.0-alpha-host-source.tar.gz
+          python3 -m payloadforge.demo_fixture --out dist/fixtures
+          cd dist
+          sha256sum payloadforge-0.1.0-alpha-host-source.tar.gz | tee SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: payloadforge-0.1.0-alpha-host-preview
+          path: dist/
+          if-no-files-found: error
