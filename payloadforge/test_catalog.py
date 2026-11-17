@@ -1,4 +1,5 @@
-import copy,unittest
+import copy,unittest,json
+from pathlib import Path
 from payloadforge.catalog import join
 BASE={"name":"Demo","id":"demo","url":"https://github.com/owner/demo/releases/download/v1/demo.elf","source":"https://github.com/owner/demo"}
 ITEM={"id":"demo","name":"Demo","version":"1","pldmgr_id":"demo","source":BASE["source"],"archive_url":"https://github.com/owner/demo/releases/download/v1/data.zip","archive_sha256":"a"*64,"manifest_url":"https://example.org/manifest.json","manifest_sha256":"b"*64,"firmwares":["13.60"]}
@@ -25,3 +26,12 @@ class IntegrationTests(unittest.TestCase):
         self.assertIsNone(join([BASE],side([x]))["packages"][0]["pldmgr"])
     def test_missing_firmware(self):
         with self.assertRaises(ValueError):join([BASE],side([{**ITEM,"firmwares":[]}]))
+    def test_actual_catalog_unchanged(self):
+        root=Path(__file__).resolve().parents[1]
+        current=json.loads((root/"payloads_v2.json").read_text())
+        sidecar=json.loads((root/"payloadforge_catalog.json").read_text())
+        before=copy.deepcopy(current)
+        result=join(current,sidecar)
+        self.assertEqual(result["pldmgr_count"],len(current["payloads"]))
+        self.assertEqual(result["companion_count"],0)
+        self.assertEqual(before,current)
