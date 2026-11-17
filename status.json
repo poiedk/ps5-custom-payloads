@@ -1,6 +1,5 @@
 {
   "warnings": [
-    "omnipad: no matching release asset",
     "lz4-compression: no matching release asset"
   ],
   "icons": {
@@ -27,6 +26,10 @@
     "omnipad-ce": {
       "type": "upstream",
       "url": "https://raw.githubusercontent.com/jpemendonca/OmniPad-CE/main/assets/icon0.png"
+    },
+    "omnipad": {
+      "type": "custom",
+      "reason": "no eligible upstream logo"
     },
     "glm": {
       "type": "upstream",
