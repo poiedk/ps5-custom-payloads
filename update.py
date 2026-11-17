@@ -1,4 +1,5 @@
 import json, os, re, urllib.request, pathlib, sys
+from payload_icons import build_icons
 ROOT = pathlib.Path(__file__).resolve().parent
 OUT = ROOT / 'payloads_v2.json'
 def get(repo):
@@ -50,7 +51,8 @@ def write(path,data):
 def main():
     previous={x['id']:x for x in json.loads(OUT.read_text())['payloads']} if OUT.exists() else {}
     results=[]; errors=[]
-    for s in json.loads((ROOT/'sources.json').read_text()):
+    sources=json.loads((ROOT/'sources.json').read_text())
+    for s in sources:
         try:
             results.append(select(s,(get_codeberg(s['repo']) if s.get('provider')=='codeberg' else get(s['repo']))))
         except Exception as e:
@@ -61,8 +63,10 @@ def main():
         print(e,file=sys.stderr)
     if not results:
         raise SystemExit('No qualifying assets; refusing to overwrite catalog')
-    write(OUT,{'name':'DK PS5 Custom Payloads','payloads':results})
+    icons,icon_report=build_icons(results,{s['id']:s for s in sources})
+    write(ROOT/'icons.json',icons)
+    write(OUT,{'name':'DK PS5 Custom Payloads','icons_url':'icons.json','payloads':results})
     write(ROOT/'payloads.json',results)
-    write(ROOT/'status.json',{'warnings':errors})
+    write(ROOT/'status.json',{'warnings':errors,'icons':icon_report})
 if __name__=='__main__':
     main()
