@@ -76,5 +76,70 @@
     "checksum": "ab9a6cb4d3b1daf139d4d646e402b1cf569071acd64599c936d7a3a6164dc779",
     "source": "https://github.com/EchoStretch/kstuff-lite/releases",
     "description": "Verify firmware compatibility before use."
+  },
+  {
+    "id": "prosperomgr",
+    "name": "ProsperoMgr",
+    "filename": "prosperomgr.elf",
+    "url": "https://github.com/notmaj0r/ProsperoMgr/releases/download/v1.2.1/ProsperoMgr.elf",
+    "source_direct": "https://github.com/notmaj0r/ProsperoMgr/releases/download/v1.2.1/ProsperoMgr.elf",
+    "version": "v1.2.1",
+    "last_update": "2026-11-15",
+    "category": "Utilities & Tools",
+    "checksum": "f9240e53ac5f035b36fb6eca2845dd49827eddfb133d1bbb2810b1a025db9c5b",
+    "source": "https://github.com/notmaj0r/ProsperoMgr/releases",
+    "description": "Verify firmware compatibility before use."
+  },
+  {
+    "id": "hearbridge",
+    "name": "HearBridge",
+    "filename": "hearbridge.elf",
+    "url": "https://github.com/X-F1REBALL-X/HearBridge-PS5/releases/download/v1.4.2/HearBridge-1.4.2.elf",
+    "source_direct": "https://github.com/X-F1REBALL-X/HearBridge-PS5/releases/download/v1.4.2/HearBridge-1.4.2.elf",
+    "version": "v1.4.2",
+    "last_update": "2026-11-15",
+    "category": "Utilities & Tools",
+    "checksum": "565bb15656efad8d5561c2e397eac89002f12955fb2c6b65dc3475017613e434",
+    "source": "https://github.com/X-F1REBALL-X/HearBridge-PS5/releases",
+    "description": "Verify firmware compatibility before use."
+  },
+  {
+    "id": "omnipad-ce",
+    "name": "OmniPad CE",
+    "filename": "omnipad-ce.elf",
+    "url": "https://github.com/jpemendonca/OmniPad-CE/releases/download/v1.7.1/OmniPad-CE.elf",
+    "source_direct": "https://github.com/jpemendonca/OmniPad-CE/releases/download/v1.7.1/OmniPad-CE.elf",
+    "version": "v1.7.1",
+    "last_update": "2026-11-16",
+    "category": "Utilities & Tools",
+    "checksum": "4d0ffe3646c297bd159781df31d6aed688c0eb50eb40aa5b2215969d35b61638",
+    "source": "https://github.com/jpemendonca/OmniPad-CE/releases",
+    "description": "Verify firmware compatibility before use."
+  },
+  {
+    "id": "glm",
+    "name": "glm",
+    "filename": "glm.elf",
+    "url": "https://github.com/leedsy90/game-library-manager-ps5/releases/download/v0.5.0/glm-0.5.0.elf",
+    "source_direct": "https://github.com/leedsy90/game-library-manager-ps5/releases/download/v0.5.0/glm-0.5.0.elf",
+    "version": "v0.5.0",
+    "last_update": "2026-10-13",
+    "category": "Utilities & Tools",
+    "checksum": "79343fc3074124b45ba165f7800a72ae2710ccb13d10f5493fd9f68a7db20d8e",
+    "source": "https://github.com/leedsy90/game-library-manager-ps5/releases",
+    "description": "Verify firmware compatibility before use."
+  },
+  {
+    "id": "ghosttoothapi",
+    "name": "GhosttoothAPI",
+    "filename": "ghosttoothapi.elf",
+    "url": "https://github.com/StonedModder/Ghostcontrol-PS5-USB-Controller-Patcher/releases/download/v2.2.5-beta/GhosttoothAPI.elf",
+    "source_direct": "https://github.com/StonedModder/Ghostcontrol-PS5-USB-Controller-Patcher/releases/download/v2.2.5-beta/GhosttoothAPI.elf",
+    "version": "v2.2.5-beta",
+    "last_update": "2026-11-05",
+    "category": "Utilities & Tools",
+    "checksum": "9252b95bdf019f83628e454d03c15709fd2a59abf1f218e3d02f141eae1e9a19",
+    "source": "https://github.com/StonedModder/Ghostcontrol-PS5-USB-Controller-Patcher/releases",
+    "description": "Verify firmware compatibility before use."
   }
 ]

@@ -1,5 +1,7 @@
 {
   "warnings": [
-    "nanodns: ambiguous assets"
+    "nanodns: ambiguous assets",
+    "omnipad: no matching release asset",
+    "lz4-compression: no matching release asset"
   ]
 }
