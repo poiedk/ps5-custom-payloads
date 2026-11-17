@@ -14,7 +14,7 @@
       "checksum": "3b50bdfffaad5bacdd41ad380cc7ce3dfe419d8efde57b30c0c0e7a338fe2494",
       "source": "https://github.com/quer3q/kraken-mount/releases",
       "description": "Verify firmware compatibility before use.",
-      "icon_key": "3413ceb7198fa52246409801a1a37d2447283eb9c95c92f0c4be430cbe706c8f"
+      "icon_key": "d74089e0337bb63ace1bb1885260ce2a01ba5479e84b7c678e8c80ce5ddb2baf"
     },
     {
       "id": "shadowkraken",
@@ -28,7 +28,7 @@
       "checksum": "df22150e375768152b3f6284ddccee508f2efc02f5c4d9fe86830b86f583660e",
       "source": "https://github.com/MNeroba/ShadowKraken/releases",
       "description": "Verify firmware compatibility before use.",
-      "icon_key": "57d61e5bd1ae86b39a324ff18e0a65eeee3f4166ae9a65476e28764b2f1a7b80"
+      "icon_key": "95d472ff17b19c19fd54726274b3f7d7989cdaf350a5ebd43619f3e73e108b46"
     },
     {
       "id": "alembic",
@@ -42,7 +42,7 @@
       "checksum": "82c5ae495166e018ead5042adb7820e7d37bf40b2c18c5ee0af909a5f042f6da",
       "source": "https://github.com/fthdgn-gh/Alembic/releases",
       "description": "Verify firmware compatibility before use.",
-      "icon_key": "994a8563727f3255cd9dd36360da05bc50aa19a1e773bb22874fd00a263070bc"
+      "icon_key": "6d2b2f1f9e59077ac9a3f53973bfff83634b2e8fa8016baca3b80d301752391a"
     },
     {
       "id": "prosperomgr",
@@ -56,7 +56,7 @@
       "checksum": "f9240e53ac5f035b36fb6eca2845dd49827eddfb133d1bbb2810b1a025db9c5b",
       "source": "https://github.com/notmaj0r/ProsperoMgr/releases",
       "description": "Verify firmware compatibility before use.",
-      "icon_key": "75ca8455897e96f428a31dbcea2f421baf345b189ab37f642c7a375111d3ecac"
+      "icon_key": "e1268ca37e897a6dcfc10c859cfebf09e9d48120fdd13dc4b83c2e4c21c3ef46"
     },
     {
       "id": "hearbridge",
@@ -70,7 +70,7 @@
       "checksum": "565bb15656efad8d5561c2e397eac89002f12955fb2c6b65dc3475017613e434",
       "source": "https://github.com/X-F1REBALL-X/HearBridge-PS5/releases",
       "description": "Verify firmware compatibility before use.",
-      "icon_key": "b541cc863c12ecaad080a47aea69d698c5c5c4f2ed6ff41bc9f59707235d240c"
+      "icon_key": "6024268c948f4a4a0e4678f816e31f4cda79cef26cfca498d042bb3ebf0a9ad9"
     },
     {
       "id": "omnipad-ce",
@@ -84,7 +84,7 @@
       "checksum": "4d0ffe3646c297bd159781df31d6aed688c0eb50eb40aa5b2215969d35b61638",
       "source": "https://github.com/jpemendonca/OmniPad-CE/releases",
       "description": "Verify firmware compatibility before use.",
-      "icon_key": "505dd2b0603a62e8a1e853a6e1f0103177aae784c33831151a45cc764914f703"
+      "icon_key": "176ed3b6da4419d93fb641d7879e477088fbe1f3fe33725c9b773b8a6105d4d9"
     },
     {
       "id": "glm",
@@ -98,7 +98,7 @@
       "checksum": "79343fc3074124b45ba165f7800a72ae2710ccb13d10f5493fd9f68a7db20d8e",
       "source": "https://github.com/leedsy90/game-library-manager-ps5/releases",
       "description": "Verify firmware compatibility before use.",
-      "icon_key": "77091ca4e86b0f57d0481a76f520d0ed39bc92b98f7d795f4a9c4671ae2d4a0e"
+      "icon_key": "9591c620b25998e5800df6326893cd9ad8790b917d1b308a1409ae814ac3583b"
     },
     {
       "id": "ghosttoothapi",
@@ -112,7 +112,7 @@
       "checksum": "9252b95bdf019f83628e454d03c15709fd2a59abf1f218e3d02f141eae1e9a19",
       "source": "https://github.com/StonedModder/Ghostcontrol-PS5-USB-Controller-Patcher/releases",
       "description": "Verify firmware compatibility before use.",
-      "icon_key": "c8d74eafc8bc2b51f7bbcac15221cd819b50e9bee1e8637714ab8600a4e5781e"
+      "icon_key": "baa7b8eb6f1949ec38276d3da26e73d52d939624202625ec26c1228f4d4c74f6"
     },
     {
       "id": "anypad",
@@ -126,7 +126,7 @@
       "checksum": "08ebdc013810d2a54f879ac3033a969c62280dccfc2a1ea4a04b161b891db816",
       "source": "https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases",
       "description": "Verify firmware compatibility before use.",
-      "icon_key": "2203b2f74a1a59638b5e8d3a056e2bf2dfb3e2445b4b61635c13026494284630"
+      "icon_key": "51a9d9db433222d2d21d1d4100d2b37261a0415f36d39f783cc31baf5d8c8227"
     }
   ]
 }
