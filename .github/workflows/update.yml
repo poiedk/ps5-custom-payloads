@@ -10,6 +10,8 @@ on:
       - update.py
       - zip_release.py
       - payloadforge/archive.py
+      - payloadforge/tar_archive.py
+      - payloadforge/package_type.py
       - payload_icons.py
       - .github/workflows/update.yml
 permissions:
