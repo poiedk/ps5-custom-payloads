@@ -6,6 +6,7 @@
 #include "manifest.h"
 #include "zip.h"
 #include "sha256.h"
+#include "version.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -275,7 +276,8 @@ int pf_backup_verify(int root,const char *id,const char *snapshot){
  * A partial stage can never become active; no recursive deletion is performed.
  */
 static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
- const unsigned char *manifest,size_t mn,const char *mh,int update){
+ const unsigned char *manifest,size_t mn,const char *mh,int action){
+ int update=action!=0;
  int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,stage=-1,data=-1;
  pf_file *files=NULL,*old=NULL,*check=NULL;pf_zip_entry *entries=NULL;
  int previous=-1,prior_data=-1,backups=-1,source_snapshot=-1;unsigned char *effective=NULL;size_t effective_n=0;
@@ -300,6 +302,7 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
   old=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*old));if(!old)goto done;
   previous=dir_at(gens,current_id,0);if(previous<0||load_generation(previous,current_id,plan.id,&prior,old))goto done;
   if(!strcmp(prior.version,plan.version))goto done;
+  if(action==2||action==3){int order;if(pf_version_compare(plan.version,prior.version,&order)||(action==2?order<=0:order>=0))goto done;}
   prior_data=dir_at(previous,"data",0);if(prior_data<0)goto done;
   /* Verify every registered immutable file before staging; mutable configs may differ. */
   for(size_t i=0;i<prior.count;i++){
@@ -483,5 +486,32 @@ int pf_uninstall(int root,const char *id,int keep,size_t *removed){
   close(parent);
  }
  done:if(data>=0)close(data);if(gen>=0)close(gen);if(gens>=0)close(gens);if(app>=0)close(app);if(apps>=0)close(apps);if(lock>=0)close(lock);
+ free(files);return rc;
+}
+
+int pf_install_upgrade(int root,const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh){
+ return apply(root,a,an,ah,m,mn,mh,2);
+}
+int pf_install_downgrade(int root,const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh){
+ return apply(root,a,an,ah,m,mn,mh,3);
+}
+/* Inventory reads registry metadata; it is not a full content verification. */
+int pf_status(int root,const char *id,char version[65],char generation[65]){
+ if(!version||!generation)return -1;
+ version[0]=generation[0]=0;
+ if(!id||!pf_id_valid(id,strlen(id)))return -1;
+ int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,gen=-1;char current[65];
+ pf_manifest plan;pf_file *files=NULL;
+ lock=open_root_lock(root);if(lock<0)goto done;
+ int present=exists_at(root,"apps");if(!present){rc=0;goto done;}if(present<0)goto done;
+ apps=dir_at(root,"apps",0);if(apps<0)goto done;
+ present=exists_at(apps,id);if(!present){rc=0;goto done;}if(present<0)goto done;
+ app=dir_at(apps,id,0);if(app<0)goto done;
+ present=read_marker(app,current);if(present==0||present>=2){rc=0;goto done;}if(present<0)goto done;
+ gens=dir_at(app,"generations",0);if(gens<0)goto done;
+ gen=dir_at(gens,current,0);if(gen<0)goto done;
+ files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));if(!files||load_generation(gen,current,id,&plan,files))goto done;
+ memcpy(version,plan.version,strlen(plan.version)+1);memcpy(generation,current,65);rc=1;
+ done:if(gen>=0)close(gen);if(gens>=0)close(gens);if(app>=0)close(app);if(apps>=0)close(apps);if(lock>=0)close(lock);
  free(files);return rc;
 }
