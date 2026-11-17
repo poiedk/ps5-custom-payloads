@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/file.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -57,6 +56,11 @@ static int write_member(int root,const pf_zip_entry *e){
  if(!rc&&fsync(fd))rc=-1;
  close(fd);return rc;
 }
+static int lock_exclusive(int fd){
+ struct flock lock={0};lock.l_type=F_WRLCK;lock.l_whence=SEEK_SET;
+ int rc;do{rc=fcntl(fd,F_SETLKW,&lock);}while(rc<0&&errno==EINTR);
+ return rc;
+}
 static int exists_at(int fd,const char *name){
  struct stat s;if(!fstatat(fd,name,&s,AT_SYMLINK_NOFOLLOW))return 1;
  return errno==ENOENT?0:-1;
@@ -77,7 +81,7 @@ int pf_install_initial(int root,const unsigned char *archive,size_t an,const cha
  entries=calloc(plan.count,sizeof(*entries));if(!entries)goto done;
  if(pf_zip_scan(archive,an,entries,plan.count,&count)||count!=plan.count)goto done;
  lock=openat(root,".lock",O_RDWR|O_CREAT|O_NOFOLLOW|O_CLOEXEC|O_NONBLOCK,0600);
- if(lock<0||!is_regular(lock)||flock(lock,LOCK_EX))goto done;
+ if(lock<0||!is_regular(lock)||lock_exclusive(lock))goto done;
  apps=dir_at(root,"apps",1);if(apps<0||fsync(root))goto done;
  app=dir_at(apps,plan.id,1);if(app<0||fsync(apps))goto done;
  int current=exists_at(app,"CURRENT");
