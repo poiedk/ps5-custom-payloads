@@ -122,3 +122,11 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Actual log: `Ran 189 tests in 5.973s` / `OK`; native smoke build succeeded, artifact 14370212500, ELF SHA-256 70ff99672b240d2fc914fad2370092cb54ca1c1ebc79867967cb73d8941c8b81.
 - Strict ASCII JSON subset, schemas 1–3 with empty dependencies/resources/conflicts only. Invalid keys, duplicates, path overlap and executable companions rejected. Independently supplied archive and manifest SHA-256 plus exact member size/hash.
 - No file writes. Nonempty constraints and compressed archives fail closed until native support exists.
+
+## N4: native initial-install store
+- Initial run 44177616907: host `Ran 197 tests in 7.089s` / `OK`; SDK cross-compile failed for flock/sys/file.h.
+- Retry [44177784467](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44177784467), commit 4ace69a: host tests and native preflight compilation succeeded.
+- Actual log: `Ran 197 tests in 8.531s` / `OK`; `PayloadForge native preflight: OK (read-only; not installer)`.
+- ELF SHA-256 6bfef88e75cf97cba5c0875627c00f6bc1374b8566aedec59ec7a207ad889572; artifact 14369274154.
+- Initial-install-only library is linked; writes exercised in Linux host tests, not on PS5. Private directory fd, POSIX process lock, no symlink following, verified data-only ZIP, staging, fsync and atomic CURRENT pointer. Concurrent threads must be serialized by a future daemon; failure before activation may leave inactive staging/generation metadata for inspection.
+- Update/config merge, registry parity, backup/rollback/uninstall, compressed archives, dependency metadata, native daemon and hardware validation still open.
