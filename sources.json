@@ -47,5 +47,54 @@
     "name": "kstuff-lite",
     "pattern": "kstuff(?:[-_]lite)?(?:[-_]v?[0-9.]+)*\\.elf",
     "prerelease": false
+  },
+  {
+    "id": "prosperomgr",
+    "repo": "notmaj0r/ProsperoMgr",
+    "name": "ProsperoMgr",
+    "pattern": "ProsperoMgr\\.elf",
+    "prerelease": false
+  },
+  {
+    "id": "hearbridge",
+    "repo": "X-F1REBALL-X/HearBridge-PS5",
+    "name": "HearBridge",
+    "pattern": "HearBridge(?:-PS5)?(?:-v?[0-9.]+)?\\.elf",
+    "prerelease": false
+  },
+  {
+    "id": "omnipad-ce",
+    "repo": "jpemendonca/OmniPad-CE",
+    "name": "OmniPad CE",
+    "pattern": "OmniPad-CE\\.elf",
+    "prerelease": false
+  },
+  {
+    "id": "omnipad",
+    "repo": "diegobarbosaa/OmniPad-PS5",
+    "name": "OmniPad",
+    "pattern": "OmniPad-PS5\\.elf",
+    "prerelease": false
+  },
+  {
+    "id": "lz4-compression",
+    "repo": "porkchop315/ps5-lz4-compression",
+    "name": "lz4 compression",
+    "pattern": "lz4-compression\\.elf",
+    "prerelease": false
+  },
+  {
+    "id": "glm",
+    "repo": "leedsy90/game-library-manager-ps5",
+    "name": "glm",
+    "pattern": "glm(?:-v?[0-9.]+)?\\.elf",
+    "prerelease": false
+  },
+  {
+    "id": "ghosttoothapi",
+    "repo": "StonedModder/Ghostcontrol-PS5-USB-Controller-Patcher",
+    "name": "GhosttoothAPI",
+    "pattern": "Ghost-?toothAPI\\.elf",
+    "prerelease": true
   }
 ]
