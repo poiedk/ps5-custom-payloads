@@ -27,3 +27,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Detect ELF, ZIP, TAR.GZ and root manifest marker from bytes; classification is not integrity verification.
 - TAR.GZ integrated into opt-in updater; mismatched content and manifest bundles rejected from standalone publishing.
 - Host-only fixtures; no live source or hardware test.
+
+## Stage 4 — host transaction engine
+- CI verified: [run 44163735332](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44163735332), commit ad7ad5a.
+- Actual log: `Ran 80 tests in 0.103s` / `OK`.
+- External-manifest data-only ZIP install/update into a private managed root; atomic CURRENT pointer and registry, SHA-256, configuration preservation, failed pre-activation cleanup.
+- Host only: not a native installer; no arbitrary application/system paths. Power-loss durability on PS5 is unverified.
