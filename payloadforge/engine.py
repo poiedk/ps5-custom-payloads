@@ -19,7 +19,7 @@ from pathlib import Path
 from .archive import MAX_MEMBER, MAX_TOTAL, safe_name
 from .manifest import ID, validate
 from .bundle import verify_bundle
-from .dependencies import dependency_order
+from .conflicts import validate_state
 
 GEN = re.compile(r"[a-f0-9]{32}")
 def digest(raw): return hashlib.sha256(raw).hexdigest()
@@ -84,11 +84,11 @@ class Engine:
         folder=self._generation(app,name)
         record=json.loads(regular(folder/"registry.json",2*1024*1024))
         fields={"id","version","generation","archive_sha256","files"}
-        if set(record) not in (fields,fields|{"dependencies"}) or record["id"]!=app.name or record["generation"]!=name:
+        if set(record) not in (fields,fields|{"dependencies"},fields|{"dependencies","resources","conflicts"}) or record["id"]!=app.name or record["generation"]!=name:
             raise ValueError("invalid registry")
         if not re.fullmatch(r"[a-f0-9]{64}",record["archive_sha256"]):
             raise ValueError("invalid archive digest in registry")
-        validate({"schema_version":2,"id":record["id"],"version":record["version"],"files":record["files"],"dependencies":record.get("dependencies",[])})
+        validate({"schema_version":3,"id":record["id"],"version":record["version"],"files":record["files"],"dependencies":record.get("dependencies",[]),"resources":record.get("resources",[]),"conflicts":record.get("conflicts",[])})
         return record,directory(folder/"data")
     def _read_state_files(self,record,base):
         result={};total=0
@@ -120,15 +120,15 @@ class Engine:
             current=self._pointer(app)
             if current:result[app.name]=self._state(app,current)[0]
         return result
-    def _publish(self,app,version,archive_sha256,files,dependencies=()):
+    def _publish(self,app,version,archive_sha256,files,dependencies=(),resources=(),conflicts=()):
         items=[{"path":path,"sha256":digest(raw),"size":len(raw),"policy":policy}
                for path,(raw,policy) in sorted(files.items())]
-        dependencies=list(dependencies)
-        validate({"schema_version":2,"id":app.name,"version":version,"files":items,"dependencies":dependencies})
+        dependencies=list(dependencies);resources=list(resources);conflicts=list(conflicts)
+        validate({"schema_version":3,"id":app.name,"version":version,"files":items,"dependencies":dependencies,"resources":resources,"conflicts":conflicts})
         gens=directory(app/"generations",True)
         name=uuid.uuid4().hex;stage=gens/(".stage-"+name);final=gens/name
         stage.mkdir(mode=0o700)
-        record={"id":app.name,"version":version,"generation":name,"archive_sha256":archive_sha256,"files":items,"dependencies":dependencies}
+        record={"id":app.name,"version":version,"generation":name,"archive_sha256":archive_sha256,"files":items,"dependencies":dependencies,"resources":resources,"conflicts":conflicts}
         try:
             base=directory(stage/"data",True)
             for path,(raw,_) in files.items():write_new(within(base,path,True),raw)
@@ -152,7 +152,7 @@ class Engine:
                 if len(data)!=f["size"] or digest(data)!=f["sha256"]:raise ValueError("bundle changed")
                 files[f["relative_path"]]=(data,f["policy"])
         with self.locked():
-            dependency_order(self._installed(),{plan["id"]:{"version":plan["version"],"dependencies":plan["dependencies"]}})
+            validate_state(self._installed(),{plan["id"]:{k:plan[k] for k in ("version","dependencies","resources","conflicts")}})
             app=self._app(plan["id"],True)
             current=self._pointer(app)
             if current:
@@ -161,7 +161,7 @@ class Engine:
                     if policy=="preserve":
                         if path in files and files[path][1]!="preserve":raise ValueError("cannot demote preserved configuration")
                         files[path]=(data,policy)
-            return self._publish(app,plan["version"],archive_sha256.lower(),files,plan["dependencies"])
+            return self._publish(app,plan["version"],archive_sha256.lower(),files,plan["dependencies"],plan["resources"],plan["conflicts"])
     def status(self,app_id):
         with self.locked():
             app=self._app(app_id)
