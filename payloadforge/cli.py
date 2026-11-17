@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from .archive import MAX_ARCHIVE
 from .bundle import verify_bundle
+from .catalog import join
 from .engine import Engine,regular
 
 def strict_json(raw):
@@ -26,6 +27,7 @@ def parser():
         s.add_argument("--manifest",required=True,type=Path)
         if name!="plan":s.add_argument("--confirm",action="store_true")
     sub.add_parser("list")
+    cat=sub.add_parser("catalog");cat.add_argument("--pldmgr",required=True,type=Path);cat.add_argument("--bundles",required=True,type=Path)
     for name in ("info","versions","backups","recovery","backup","rollback","uninstall"):
         s=sub.add_parser(name);s.add_argument("id")
         if name in ("backup","rollback","uninstall"):s.add_argument("--confirm",action="store_true")
@@ -40,6 +42,7 @@ def execute(args):
         raw=regular(args.archive,MAX_ARCHIVE);manifest=strict_json(regular(args.manifest,2*1024*1024))
         if c=="plan":return verify_bundle(raw,args.sha256,manifest)
         return Engine(args.root).install(raw,args.sha256,manifest,action=c)
+    if c=="catalog":return join(strict_json(regular(args.pldmgr,16*1024*1024)),strict_json(regular(args.bundles,16*1024*1024)))
     engine=Engine(args.root)
     if c=="list":return engine.list_installed()
     if c=="info":return engine.status(args.id)
