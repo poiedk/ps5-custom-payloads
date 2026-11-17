@@ -2,6 +2,7 @@
 #include "core.h"
 #include "sha256.h"
 #include "zip.h"
+#include "manifest.h"
 #include <stdio.h>
 #include <string.h>
 #define EXPECT(x) do { if (!(x)) { fprintf(stderr,"FAIL: %s\n",#x); return 1; } } while(0)
@@ -17,6 +18,8 @@ int main(void){
     EXPECT(!pf_sha256_matches("abd",3,"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"));
     pf_zip_entry entry; size_t count=1;
     EXPECT(pf_zip_scan((const unsigned char *)"invalid",7,&entry,1,&count)!=0 && count==0);
+    pf_manifest plan; pf_file file;
+    EXPECT(pf_manifest_parse((const unsigned char *)"{}",2,&plan,&file,1)!=0 && plan.count==0);
     puts("PayloadForge native preflight: OK (read-only; not installer)");
     return 0;
 }
