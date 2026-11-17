@@ -67,6 +67,8 @@ jobs:
             payloadforge/native/build/SHA256SUMS
             payloadforge/native/core.c
             payloadforge/native/core.h
+            payloadforge/native/sha256.c
+            payloadforge/native/sha256.h
             payloadforge/native/preflight.c
             payloadforge/native/Makefile
             payloadforge/COPYING
