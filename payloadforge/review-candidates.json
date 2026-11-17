@@ -1,13 +1,18 @@
 {
   "schema_version": 1,
-  "policy": "Review only; no automatic install or catalog publication.",
+  "policy": "Review only; no automatic install or catalog publication. Exact release artifact bytes must be independently verified before approval.",
   "candidates": [
     {
       "id": "omnipad",
       "repo": "diegobarbosaa/OmniPad-PS5",
       "asset_pattern": "OmniPad-PS5(?:-v?[0-9]+(?:\\.[0-9]+)*)?\\.elf",
       "kind": "standalone",
-      "status": "verify release metadata and prerelease selection"
+      "status": "hold",
+      "reason": "Upstream documents 13.60, but public beta/release asset and independently downloaded SHA-256 still need review. Stable-only updater policy stays unchanged.",
+      "evidence": [
+        "https://github.com/diegobarbosaa/OmniPad-PS5/releases",
+        "https://github.com/diegobarbosaa/OmniPad-PS5/blob/main/docs/FIRMWARE_1360_GUIDE.md"
+      ]
     },
     {
       "id": "lz4-compression",
@@ -15,21 +20,114 @@
       "kind": "standalone-plus-optional-bundle",
       "asset_pattern": "lz4-compression\\.elf",
       "companion_asset": "LZ4-Compression-PPSA99420.zip",
-      "status": "verify current canonical host and asset digests"
+      "status": "hold",
+      "reason": "Configured GitHub repo is a fork; canonical upstream release host/asset and digest not independently confirmed; optional app folder must not be stripped.",
+      "evidence": [
+        "https://github.com/porkchop315/ps5-lz4-compression",
+        "https://github.com/theghostonline/PS5-LZ4-Compression"
+      ]
     },
     {
       "id": "prosperostore",
       "repo": "darkxex/ProsperoStore",
       "kind": "app-bundle",
       "asset_pattern": "PPSA99000\\.zip",
-      "status": "verify current release and attestation; prefer upstream installer"
+      "status": "hold",
+      "reason": "Native app ZIP; upstream README references build attestations under blackbearreloaded/ProsperoStore. Confirm canonical owner and verify exact release attestation independently; existing official installer preferred.",
+      "evidence": [
+        "https://github.com/darkxex/ProsperoStore",
+        "https://github.com/darkxex/ProsperoStore/releases"
+      ]
     },
     {
       "id": "nasbridge",
       "repo": "J7mbo/nasbridge-ps5",
       "kind": "standalone",
       "asset_pattern": "NASBridge-[A-Za-z0-9._-]+\\.elf",
-      "status": "verify release, intended use and firmware support"
+      "status": "hold",
+      "reason": "Upstream points to relocated source; source revision-to-binary and digest not independently established.",
+      "evidence": [
+        "https://github.com/J7mbo/nasbridge-ps5",
+        "https://github.com/J7mbo/ps5-homebrew-ui"
+      ]
+    },
+    {
+      "id": "orbit-store",
+      "repo": "saawant12/orbit-store-ps5",
+      "kind": "upstream-feed",
+      "status": "hold",
+      "reason": "Developer maintains own PLDMGR feed and offers ELF/source bundle. Independent artifact digest not checked; do not duplicate upstream feed or promote unreviewed content sources.",
+      "evidence": [
+        "https://github.com/saawant12/orbit-store-ps5",
+        "https://github.com/saawant12/orbit-store-ps5/releases"
+      ]
+    },
+    {
+      "id": "blackbox",
+      "repo": "D3ATHLY/blackbox",
+      "status": "hold",
+      "reason": "Public source for matching binary not established; upstream Orbit developer alleges source reuse without publication. Allegation is not proof of maliciousness.",
+      "evidence": [
+        "https://github.com/saawant12/blackbox-gpl",
+        "https://github.com/saawant12/orbit-store-ps5"
+      ]
+    },
+    {
+      "id": "ps5-store-aio",
+      "repo": "nexgen999/evoX-CoreOS",
+      "status": "hold",
+      "reason": "Possible project found via release titles; canonical identity, matching public PS5 source and checksum not established.",
+      "evidence": [
+        "https://github.com/nexgen999/evoX-CoreOS/releases"
+      ]
+    },
+    {
+      "id": "webkit-autoloader",
+      "repo": "itsPLK/ps5-webkit-autoloader",
+      "status": "duplicate",
+      "reason": "Confirmed in official PLDMGR mirror; no additional entry.",
+      "evidence": [
+        "https://github.com/itsPLK/ps5-payloads-mirror/blob/main/payloads_v2.json"
+      ]
+    },
+    {
+      "id": "shadowmountplus",
+      "repo": "drakmor/ShadowMountPlus",
+      "status": "duplicate",
+      "reason": "Confirmed in official PLDMGR mirror; no additional entry.",
+      "evidence": [
+        "https://github.com/itsPLK/ps5-payloads-mirror/blob/main/payloads_v2.json"
+      ]
+    },
+    {
+      "id": "linux-loader",
+      "repo": "ps5-linux/ps5-linux-loader",
+      "status": "duplicate",
+      "reason": "Official PLDMGR mirror lists v2.5; upstream reports 13.60 support, but hardware use remains unverified.",
+      "evidence": [
+        "https://github.com/itsPLK/ps5-payloads-mirror/blob/main/payloads_v2.json",
+        "https://github.com/ps5-linux/ps5-linux-loader",
+        "https://wiki.ps5-linux.eu/getting-started/firmware/"
+      ]
+    },
+    {
+      "id": "y2jb-autoloader",
+      "repo": "itsPLK/ps5-y2jb-autoloader",
+      "status": "hold",
+      "reason": "Boot-chain-sensitive official updater; not covered by managed app-only root. Manual upstream procedure only; no automatic changes.",
+      "evidence": [
+        "https://github.com/itsPLK/ps5-y2jb-autoloader/releases"
+      ]
+    },
+    {
+      "id": "hearbridge",
+      "repo": "X-F1REBALL-X/HearBridge-PS5",
+      "status": "existing",
+      "reason": "Already in custom catalog; official releases expose SHA-256. No duplicate; no change to existing ID.",
+      "evidence": [
+        "https://github.com/X-F1REBALL-X/HearBridge-PS5/releases"
+      ]
     }
-  ]
+  ],
+  "checked_on": "2026-11-17"
 }
