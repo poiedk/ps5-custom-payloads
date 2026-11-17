@@ -6,6 +6,7 @@ This host-side prototype is not a native PS5 installer.
 import re
 from pathlib import PurePosixPath
 from payloadforge.archive import safe_name
+from payloadforge.dependencies import validate_dependencies
 
 ID = re.compile(r"[a-z0-9][a-z0-9-]{0,47}")
 SHA = re.compile(r"[a-f0-9]{64}")
@@ -14,10 +15,13 @@ MAX_TOTAL = 256 * 1024 * 1024
 ALLOWED_SUFFIXES = {".json", ".ini", ".cfg", ".conf", ".txt", ".png", ".jpg", ".jpeg", ".webp", ".md", ".dat"}
 
 def validate(manifest):
-    if not isinstance(manifest, dict) or set(manifest) != {"schema_version","id","version","files"}:
+    base={"schema_version","id","version","files"}
+    if not isinstance(manifest,dict) or type(manifest.get("schema_version")) is not int:
         raise ValueError("invalid manifest structure")
-    if manifest["schema_version"] != 1:
-        raise ValueError("unsupported schema")
+    schema=manifest["schema_version"]
+    if schema not in (1,2) or set(manifest)!= (base if schema==1 else base|{"dependencies"}):
+        raise ValueError("unsupported schema or manifest structure")
+    dependencies=validate_dependencies(manifest.get("dependencies",[]))
     app = manifest["id"]
     if not isinstance(app,str) or not ID.fullmatch(app):
         raise ValueError("invalid id")
@@ -60,4 +64,4 @@ def validate(manifest):
             raise ValueError("configuration must be preserved")
         plan.append({"relative_path":path,"target":"/data/payloadforge/apps/"+app+"/"+path,
                      "sha256":digest,"size":n,"policy":policy})
-    return {"id":app,"version":version,"total_bytes":total,"files":plan,"dry_run":True}
+    return {"id":app,"version":version,"total_bytes":total,"files":plan,"dry_run":True,"dependencies":dependencies}
