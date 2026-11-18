@@ -184,3 +184,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Nine new state-transition tests; verifies proposed final graph under root lock before install/update/rollback/uninstall. Blocks reverse dependency violations, cycles, declared path/port/version conflicts and corrupt peer manifests. Original hash-verified manifest is the canonical metadata source, including for restored snapshots; effective registry still records actual files and preserved config.
 - PR #5 merged into development ONLY at 99ed31b. ELF artifact 14407857895, SHA-256 082651e3fdb72844ced2fdcdbd6ffa2c1d8206c779b685d3bb39c133ae50b552.
 - Scope: managed, declared resources only; no probing unmanaged processes, no automatic dependency downloads or execution. Native runtime/hardware untested. Stored ZIP only; compression and recovery next.
+
+### N11-A — bounded native DEFLATE primitive
+- [Run 44261123988](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44261123988), commit 015ea11: all three jobs succeeded. Actual host log: `Ran 282 tests in 10.911s` / `OK`.
+- zlib 1.4 source hash independently matched in CI: 02dd159783677a749c04adbdd02b55b8a2bcc7e054f51b76b549199a916ad584. Strict output/input length, raw stream termination and expansion bounds; no file writes.
+- PR #6 merged into development ONLY at 053fb0d. Read-only ELF artifact 14408445774, SHA-256 3438a449562bbf760016260990281ebb0627dd941767487d2b1db485c958127a.
+- ZIP ingestion and actual hardware use remain untested.
