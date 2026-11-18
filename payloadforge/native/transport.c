@@ -10,6 +10,7 @@
 #include <poll.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <time.h>
@@ -86,11 +87,52 @@ static int response(int fd,int code,const char *body,int64_t deadline){
  if(n<0||(size_t)n>=sizeof head||sent(fd,head,(size_t)n,deadline)||sent(fd,body,strlen(body),deadline))return -1;
  return 1;
 }
-static int complete(const unsigned char *p,size_t n,size_t start){
- for(size_t i=start;i+3<n;i++)if(!memcmp(p+i,"\r\n\r\n",4))return 1;
+static size_t complete(const unsigned char *p,size_t n,size_t start){
+ for(size_t i=start;i+3<n;i++)if(!memcmp(p+i,"\r\n\r\n",4))return i+4;
  return 0;
 }
-int pf_http_serve_one(int listener,int root,const char *token,unsigned timeout_ms){
+#ifdef PF_ENABLE_MANAGED
+/* This path is not compiled into the read-only transport by default. */
+static int managed_post(int fd,int root,const unsigned char *head,size_t used,size_t hn,unsigned port,const char *token,int64_t deadline){
+ char body[PF_HTTP_MAX_BODY]={0};int code;
+ if(hn>=17&&!memcmp(head,"POST /api/upload/",17)){
+  unsigned action=0;size_t length=0;
+  code=pf_http_upload_head(head,hn,port,token,&action,&length);
+  if(code!=200)goto send_error;
+  if(used-hn>length){code=400;goto send_error;}
+  size_t total=hn+length;
+  unsigned char *raw=malloc(total);
+  if(!raw){code=500;goto send_error;}
+  memcpy(raw,head,used);
+  while(used<total){
+   if(wait_fd(fd,POLLIN,deadline)!=1){free(raw);return -1;}
+   ssize_t got=recv(fd,raw+used,total-used,0);
+   if(got<0&&(errno==EINTR||errno==EAGAIN||errno==EWOULDBLOCK))continue;
+   if(got<=0){free(raw);return -1;}
+   used+=(size_t)got;
+  }
+  pf_http_upload request;
+  code=pf_http_upload_parse(raw,total,port,token,&request);
+  if(code==200)code=pf_http_upload_dispatch(root,&request,body,sizeof body);
+  free(raw);
+ }else{
+  pf_http_control request;
+  code=pf_http_control_parse(head,used,port,token,&request);
+  if(code==200)code=pf_http_control_dispatch(root,&request,body,sizeof body);
+ }
+ /* Store transaction is not interrupted by socket timeout. Send a bounded
+  * response when possible, even if the original request window elapsed. */
+ if(code==200||code==409){
+  int64_t now=millis();
+  return now<0?-1:response(fd,code,body,now+2000);
+ }
+ send_error:return response(fd,code,"{\"error\":\"request rejected\"}",deadline);
+}
+#endif
+static int serve(int listener,int root,const char *token,unsigned timeout_ms,int managed){
+#ifndef PF_ENABLE_MANAGED
+ (void)managed;
+#endif
  unsigned port;
  if(!timeout_ms||timeout_ms>10000||listener_port(listener,&port)||nonblock(listener))return -1;
  int64_t now=millis();if(now<0)return -1;int64_t deadline=now+timeout_ms;
@@ -119,11 +161,19 @@ int pf_http_serve_one(int listener,int root,const char *token,unsigned timeout_m
   if(got<0&&(errno==EINTR||errno==EAGAIN||errno==EWOULDBLOCK))continue;
   if(got<=0)goto end;
   size_t scan=used>3?used-3:0;used+=(size_t)got;
-  if(complete(head,used,scan)){
+  size_t hn=complete(head,used,scan);
+  if(hn){
+#ifdef PF_ENABLE_MANAGED
+   if(managed&&used>=5&&!memcmp(head,"POST ",5)){rc=managed_post(fd,root,head,used,hn,port,token,deadline);goto end;}
+#endif
    pf_http_request request;
    code=pf_http_parse(head,used,port,token,&request);
    if(code==200){
     code=pf_http_dispatch(root,&request,body,sizeof body);
+#ifdef PF_ENABLE_MANAGED
+    if(managed&&code==200&&request.route==PF_HTTP_HEALTH)
+     snprintf(body,sizeof body,"{\"mode\":\"native-managed-development\",\"mutation\":true,\"upload_max\":%u}",PF_UPLOAD_MAX);
+#endif
     if(code==200||code==409){rc=response(fd,code,body,deadline);goto end;}
    }
    break;
@@ -132,3 +182,8 @@ int pf_http_serve_one(int listener,int root,const char *token,unsigned timeout_m
  rc=response(fd,code,"{\"error\":\"request rejected\"}",deadline);
  end:close(fd);return rc;
 }
+
+int pf_http_serve_one(int listener,int root,const char *token,unsigned timeout_ms){return serve(listener,root,token,timeout_ms,0);}
+#ifdef PF_ENABLE_MANAGED
+int pf_http_serve_managed_one(int listener,int root,const char *token,unsigned timeout_ms){return serve(listener,root,token,timeout_ms,1);}
+#endif
