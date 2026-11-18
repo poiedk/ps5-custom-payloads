@@ -68,7 +68,71 @@ static int file_parse(parser *s,pf_file *f){
  for(size_t i=0;i<sizeof assets/sizeof *assets;i++)if(same(suffix,assets[i]))return 1;
  return 0;
 }
-int pf_manifest_parse(const unsigned char *raw,size_t n,pf_manifest *out,pf_file *files,size_t cap){
+static int dep_list(parser *s,pf_dep *items,size_t *count){
+ if(!take(s,'['))return 0;
+ if(take(s,']'))return 1;
+ for(;;){
+  if(*count>=PF_DEP_MAX||!take(s,'{'))return 0;
+  pf_dep *d=items+*count;unsigned seen=0;char key[32];
+  for(;;){
+   if(!str(s,key,sizeof key)||!take(s,':'))return 0;
+   unsigned bit=0;
+   if(!strcmp(key,"id")){bit=1;if(!str(s,d->id,sizeof d->id))return 0;}
+   else if(!strcmp(key,"constraint")){bit=2;if(!str(s,d->constraint,sizeof d->constraint))return 0;}
+   else return 0;
+   if(seen&bit)return 0;
+   seen|=bit;
+   if(take(s,'}'))break;
+   if(!take(s,','))return 0;
+  }
+  if(seen!=3||!pf_id_valid(d->id,strlen(d->id))||pf_constraint_match("1",d->constraint)<0)return 0;
+  for(size_t j=0;j<*count;j++)if(!strcmp(items[j].id,d->id))return 0;
+  (*count)++;
+  if(take(s,']'))return 1;
+  if(!take(s,','))return 0;
+ }
+}
+static int resource_list(parser *s,pf_resource *items,size_t *count){
+ if(!take(s,'['))return 0;
+ if(take(s,']'))return 1;
+ for(;;){
+  if(*count>=PF_RESOURCE_MAX||!take(s,'{'))return 0;
+  pf_resource *r=items+*count;unsigned seen=0;char key[32],kind[8]={0};
+  int value_is_path=0;size_t port=0;
+  for(;;){
+   if(!str(s,key,sizeof key)||!take(s,':'))return 0;
+   unsigned bit=0;
+   if(!strcmp(key,"type")){bit=1;if(!str(s,kind,sizeof kind))return 0;}
+   else if(!strcmp(key,"value")){
+    bit=2;ws(s);
+    if(s->p<s->end&&*s->p=='"'){value_is_path=1;if(!str(s,r->path,sizeof r->path))return 0;}
+    else if(!number(s,&port,65535)||!port)return 0;
+   }else return 0;
+   if(seen&bit)return 0;
+   seen|=bit;
+   if(take(s,'}'))break;
+   if(!take(s,','))return 0;
+  }
+  if(seen!=3)return 0;
+  if(!strcmp(kind,"path")){
+   size_t len=strlen(r->path);
+   if(!value_is_path||len<=6||strncmp(r->path,"/data/",6)||!pf_path_valid(r->path+1,len-1))return 0;
+   r->kind=PF_PATH;
+  }else{
+   if(value_is_path||!port)return 0;
+   if(!strcmp(kind,"tcp"))r->kind=PF_TCP;
+   else if(!strcmp(kind,"udp"))r->kind=PF_UDP;
+   else return 0;
+   r->port=(unsigned)port;
+  }
+  for(size_t j=0;j<*count;j++)if(items[j].kind==r->kind&&
+   (r->kind==PF_PATH?same(items[j].path,r->path):items[j].port==r->port))return 0;
+  (*count)++;
+  if(take(s,']'))return 1;
+  if(!take(s,','))return 0;
+ }
+}
+static int parse_impl(const unsigned char *raw,size_t n,pf_manifest *out,pf_file *files,size_t cap,pf_manifest_metadata *meta){
  if(!out)return -1;
  memset(out,0,sizeof(*out));
  if(!raw||!n||n>PF_MANIFEST_LIMIT||!files||!cap)return -1;
@@ -93,7 +157,11 @@ int pf_manifest_parse(const unsigned char *raw,size_t n,pf_manifest *out,pf_file
    }
   } else if(!strcmp(key,"dependencies")||!strcmp(key,"resources")||!strcmp(key,"conflicts")){
    bit=!strcmp(key,"dependencies")?16:!strcmp(key,"resources")?32:64;
-   if(!take(&s,'[')||!take(&s,']'))return -1;
+   if(!meta){if(!take(&s,'[')||!take(&s,']'))return -1;}
+   else if(seen&bit)return -1;
+   else if(bit==16){if(!dep_list(&s,meta->dependencies,&meta->dependency_count))return -1;}
+   else if(bit==32){if(!resource_list(&s,meta->resources,&meta->resource_count))return -1;}
+   else if(!dep_list(&s,meta->conflicts,&meta->conflict_count))return -1;
   }else return -1;
   if(seen&bit)return -1;
   seen|=bit;
@@ -103,6 +171,17 @@ int pf_manifest_parse(const unsigned char *raw,size_t n,pf_manifest *out,pf_file
  ws(&s);
  if(s.p!=s.end||seen!=(m.schema==1?15u:m.schema==2?31u:127u)||!m.count||!pf_id_valid(m.id,strlen(m.id))||!version_valid(m.version))return -1;
  *out=m;return 0;
+}
+int pf_manifest_parse(const unsigned char *raw,size_t n,pf_manifest *out,pf_file *files,size_t cap){
+ return parse_impl(raw,n,out,files,cap,NULL);
+}
+int pf_manifest_parse_metadata(const unsigned char *raw,size_t n,pf_manifest *out,pf_file *files,size_t cap,pf_manifest_metadata *meta){
+ if(out)memset(out,0,sizeof(*out));
+ if(!meta)return -1;
+ memset(meta,0,sizeof(*meta));
+ int rc=parse_impl(raw,n,out,files,cap,meta);
+ if(rc)memset(meta,0,sizeof(*meta));
+ return rc;
 }
 int pf_bundle_verify(const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh,pf_manifest *out,pf_file *files,size_t cap){
  if(!out)return -1;
