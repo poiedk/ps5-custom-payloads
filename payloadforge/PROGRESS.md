@@ -204,3 +204,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Unified archive-by-content dispatch for manifest verification and native initial install/update; 12 tests exercise malformed archives, memory release, mixed ZIP/TAR update and config preservation.
 - PR #8 merged into development ONLY at a75106a. Read-only ELF artifact 14421785930, SHA-256 75de58853a57354ec2aea4e35763e03d6d2a6e821d445e57d8b5fd78de30a75e.
 - Strict subset, not general-purpose TAR extraction; no PS5 execution or memory benchmark. Next: recovery inspection and fault-injection gates.
+
+### N12-A — native read-only recovery inspection
+- [Run 44291496578](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44291496578), commit c5ba8b6: all three jobs succeeded. Actual host log: `Ran 314 tests in 13.592s` / `OK`. Cross-compilation succeeded.
+- 11 new tests cover absent state without writes, active file integrity, mutable configuration changes, damaged/missing data, malformed marker, interrupted staging/pending marker, symlink and lock rejection, and retained snapshot verification.
+- PR #9 merged into development ONLY at 2e0eee5. Read-only ELF artifact 14421985940, SHA-256 818ba6cc7101168716ca1fd6bef7b765e1ef98d5a26d317b18f57903da736f6a.
+- Reports inactive generations/backups as counts, not authenticated restore candidates. No automatic repair or removal. Next: process-interruption fault tests, then explicit recovery policy. No physical PS5 power-loss test.
