@@ -228,3 +228,10 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Ten new tests cover authenticated health/status/recovery, exact loopback Host, optional matching Origin, duplicate headers, framing, no bodies or mutations, strict package IDs, bounded replies and no store writes.
 - PR #12 merged into development ONLY at 80d2e4b. Read-only ELF artifact 14458050149, SHA-256 fc3345220870804f75fb1fbd994d0837e84d2501e3e2882cefe7f6a54bdc6e88.
 - Parser/dispatcher only. No listening socket, token generation or runtime entry point yet. No hardware execution.
+
+### N13-B — actual native loopback TCP transport
+- [Run 44368700977](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44368700977), commit 3ec8d0d: all three jobs succeeded. Actual host log: `Ran 352 tests in 16.614s` / `OK`; native preflight cross-build passed.
+- Eight Linux socket tests cover loopback-only binding, authenticated fragmented requests, invalid Host, timeout, bounds and sequential reuse. No PS5 runtime test.
+- Runs 44367559486 and 44368049604 failed source download integrity (zlib); 44368459801 verified source but failed SDK compilation on INADDR_LOOPBACK. Fixed portable IPv4 loopback constant, retained pinned zlib digest, verified archived source-only fallback in successful run. Fallback artifact is expiring, not a permanent dependency mirror.
+- PR #13 merged into development ONLY at 84c3a7a. Preflight artifact 14457962368, ELF SHA256 ec843bfc688e035c4805e4f76b5f77790e824657a6b57b607a6a3f61c41227d9.
+- Socket I/O deadline does not bound a store lock wait. No entry point, autostart, LAN binding or mutations yet.
