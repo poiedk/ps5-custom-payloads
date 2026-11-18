@@ -77,6 +77,8 @@ jobs:
             payloadforge/native/store.h
             payloadforge/native/version.c
             payloadforge/native/version.h
+            payloadforge/native/constraints.c
+            payloadforge/native/constraints.h
             payloadforge/native/preflight.c
             payloadforge/native/Makefile
             payloadforge/COPYING
