@@ -190,3 +190,10 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - zlib 1.4 source hash independently matched in CI: 02dd159783677a749c04adbdd02b55b8a2bcc7e054f51b76b549199a916ad584. Strict output/input length, raw stream termination and expansion bounds; no file writes.
 - PR #6 merged into development ONLY at 053fb0d. Read-only ELF artifact 14408445774, SHA-256 3438a449562bbf760016260990281ebb0627dd941767487d2b1db485c958127a.
 - ZIP ingestion and actual hardware use remain untested.
+
+### N11-B — native ZIP DEFLATE integration (completed)
+- PR #7 merged into development only: `956b185dd757bc3ab1ff8f06ea6fffd1768e8994`.
+- Owned decompression buffers for bounded ZIP method 8; legacy stored-only API retained. Manifest verification and managed install/update consume verified entries. CRC, size, traversal, malformed input and cleanup checks retained.
+- First CI run 44283890175: 291 tests passed; native job failed before compilation on zlib source checksum/size mismatch. Kept pinned digest unchanged and added bounded fetch retries with identity encoding, no cache, actual hash/size diagnostics and fail-closed behavior.
+- Retry CI run 44284150422: all 3 jobs passed; 291 host tests; PS5 SDK cross-build succeeded. Native artifact 14418447322; ELF SHA256 `76a3dd48227e696bef9ebe34dce973c6083e51a130fa8c1ad13aba3d9d7cf2d2`.
+- Hardware execution not tested. Artifact remains read-only preflight, not production installer. TAR.GZ native support pending.
