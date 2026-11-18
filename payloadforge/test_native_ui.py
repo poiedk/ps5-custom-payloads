@@ -55,7 +55,8 @@ class NativeUITests(unittest.TestCase):
         code,_,body=self.exchange(port,"/api/health",(host,"Authorization: Bearer "+token))
         self.assertEqual(code,200);self.assertTrue(json.loads(body)["mutation"])
         self.assertEqual(self.exchange(port,"/../store.c",(host,"Authorization: Bearer "+token))[0],404)
-        self.assertEqual(self.exchange(port,"/ui.js",(host,"Content-Length: 0"),"POST")[0],403)
+        self.assertEqual(self.exchange(port,"/ui.js",(host,"Content-Length: 0"),"POST")[0],401)
+        self.assertEqual(self.exchange(port,"/ui.js",(host,"Authorization: Bearer "+token,f"Origin: http://127.0.0.1:{port}","X-PayloadForge-Confirm: yes","Content-Length: 0"),"POST")[0],404)
         self.assertEqual(list(self.root.iterdir()),[])
     def test_ui_source_policy(self):
         html=(self.src/"web/index.html").read_text()
