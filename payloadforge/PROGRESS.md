@@ -197,3 +197,10 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - First CI run 44283890175: 291 tests passed; native job failed before compilation on zlib source checksum/size mismatch. Kept pinned digest unchanged and added bounded fetch retries with identity encoding, no cache, actual hash/size diagnostics and fail-closed behavior.
 - Retry CI run 44284150422: all 3 jobs passed; 291 host tests; PS5 SDK cross-build succeeded. Native artifact 14418447322; ELF SHA256 `76a3dd48227e696bef9ebe34dce973c6083e51a130fa8c1ad13aba3d9d7cf2d2`.
 - Hardware execution not tested. Artifact remains read-only preflight, not production installer. TAR.GZ native support pending.
+
+### N11-C — native TAR.GZ integration
+- [Run 44290886647](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44290886647), commit 114f1b7: all three jobs succeeded. Actual host log: `Ran 303 tests in 11.313s` / `OK`. Native host smoke and SDK cross-build passed.
+- Strict single-member gzip expansion validates CRC/ISIZE, full input consumption, bounded expansion. USTAR parser verifies header checksum, ASCII paths, prefix/name fields, size, zero padding and end markers; rejects links, explicit directories, extensions, duplicates and special entries.
+- Unified archive-by-content dispatch for manifest verification and native initial install/update; 12 tests exercise malformed archives, memory release, mixed ZIP/TAR update and config preservation.
+- PR #8 merged into development ONLY at a75106a. Read-only ELF artifact 14421785930, SHA-256 75de58853a57354ec2aea4e35763e03d6d2a6e821d445e57d8b5fd78de30a75e.
+- Strict subset, not general-purpose TAR extraction; no PS5 execution or memory benchmark. Next: recovery inspection and fault-injection gates.
