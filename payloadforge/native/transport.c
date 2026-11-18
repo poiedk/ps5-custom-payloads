@@ -100,7 +100,7 @@ static int asset_response(int fd,unsigned asset,int64_t deadline){
  default:return -1;
  }
  char head[1024];
- int n=snprintf(head,sizeof head,"HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %zu\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nX-Frame-Options: DENY\r\nContent-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\r\n\r\n",mime,length);
+ int n=snprintf(head,sizeof head,"HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %zu\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: same-origin\r\nX-Frame-Options: DENY\r\nContent-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\r\n\r\n",mime,length);
  if(n<0||(size_t)n>=sizeof head||sent(fd,head,(size_t)n,deadline)||sent(fd,(const char *)bytes,length,deadline))return -1;
  return 1;
 }
