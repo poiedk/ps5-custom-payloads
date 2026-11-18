@@ -17,7 +17,7 @@ This is a CI-built hardware **test candidate**, not a stable release and not a g
 - Custom repositories: https://github.com/itsPLK/ps5-payload-manager/blob/main/CUSTOM_REPOSITORIES.md
 - SDK: https://github.com/ps5-payload-dev/sdk/releases/tag/v0.42
 
-The PLDMGR source documents its own port and separate storage/configuration paths. PayloadForge neither invokes its mutation endpoints nor accesses its data directories. Actual interoperability on the console is a distinct hardware gate. No modification of the loader, boot chain or autoload is requested.
+The PLDMGR source documents its own port and separate storage/configuration paths. PayloadForge neither invokes its mutation endpoints nor accesses its data directories. An explicit authenticated UI check can send only GET /version to fixed 127.0.0.1:8084, without forwarding the PayloadForge token. The bounded response reports a syntactically valid version, not peer identity; all other responses fail closed. Actual interoperability on the console is a distinct hardware gate. No modification of the loader, boot chain or autoload is requested.
 
 ## Release policy
 
