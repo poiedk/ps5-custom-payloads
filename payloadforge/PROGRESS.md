@@ -158,3 +158,12 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - [Run 44182253046](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44182253046), commit 9e6622f. Actual host output: `Ran 242 tests in 9.822s` / `OK`; native preflight compiled. ELF SHA-256 3dffce53f2a85418a3e096f0bae59f581c10e7eecc095d5973b32813b717b258, artifact 14373091894.
 - Explicit upgrade/downgrade checks compare numeric components, prerelease and build metadata; Python cross-language vectors. Unknown version formats fail closed for ordered transitions; explicit generic update remains separate. Status reads verified registry metadata, not full data hashes.
 - Native N1–N9 implemented in C for strict data-only stored ZIP subset. Outstanding: native nonempty dependency/conflict metadata, compressed archives, recovery of interrupted staging/cleanup and rollback while uninstalled, executable runtime/harness, daemon/UI and live-catalog integration, approved app-owned mappings and hardware validation. No installer RC or console execution.
+
+## N10: native dependency and resource validator (partial)
+- Added `native/constraints.c`, `native/constraints.h` and 9 tests in `test_native_constraints.py`.
+- Validates an explicitly provided final package-state graph, including reverse dependency constraints, missing dependencies, cycles, declared version conflicts, TCP/UDP collisions and case-insensitive overlapping /data path claims.
+- Limits: 256 packages, 64 dependencies/conflicts per list, 128 resource claims per package, aggregate 4096 dependency/conflict entries and 1024 resource claims.
+- Linked the module into the native preflight build and included corresponding sources in the CI artifact configuration (commit 5352243).
+- CI lookup did not return a run for 5352243 at the time of this entry. No N10 PASS claimed. Last verified complete run remains 44182253046 (242 tests).
+- Manifest parsing and store operations still reject nonempty constraints; integration and persistence of dependency/resource metadata are the next gate, after validating this module.
+- No changes to production or PS5.
