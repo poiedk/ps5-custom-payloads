@@ -73,12 +73,14 @@ jobs:
           else
             python3 payloadforge/native/fetch_zlib.py payloadforge/native/build/zlib
           fi
-          make -C payloadforge/native ps5 ps5-runtime
+          make -C payloadforge/native ps5 ps5-runtime ps5-managed
           cd payloadforge/native/build
           readelf -h payloadforge-preflight.elf
           sha256sum payloadforge-preflight.elf | tee SHA256SUMS
           readelf -h payloadforge-runtime-read-only.elf
           sha256sum payloadforge-runtime-read-only.elf | tee RUNTIME-SHA256SUMS
+          readelf -h payloadforge-runtime-managed-development.elf
+          sha256sum payloadforge-runtime-managed-development.elf | tee MANAGED-SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: payloadforge-preflight-read-only
@@ -120,6 +122,40 @@ jobs:
           path: |
             payloadforge/native/build/payloadforge-runtime-read-only.elf
             payloadforge/native/build/RUNTIME-SHA256SUMS
+            payloadforge/native/runtime.c
+            payloadforge/native/transport.c
+            payloadforge/native/transport.h
+            payloadforge/native/http.c
+            payloadforge/native/http.h
+            payloadforge/native/store.c
+            payloadforge/native/store.h
+            payloadforge/native/core.c
+            payloadforge/native/core.h
+            payloadforge/native/sha256.c
+            payloadforge/native/sha256.h
+            payloadforge/native/zip.c
+            payloadforge/native/zip.h
+            payloadforge/native/manifest.c
+            payloadforge/native/manifest.h
+            payloadforge/native/version.c
+            payloadforge/native/version.h
+            payloadforge/native/constraints.c
+            payloadforge/native/constraints.h
+            payloadforge/native/inflate.c
+            payloadforge/native/inflate.h
+            payloadforge/native/tar.c
+            payloadforge/native/tar.h
+            payloadforge/native/fetch_zlib.py
+            payloadforge/native/build/zlib/zlib-1.4.tar.gz
+            payloadforge/native/Makefile
+            payloadforge/COPYING
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: payloadforge-runtime-managed-development
+          path: |
+            payloadforge/native/build/payloadforge-runtime-managed-development.elf
+            payloadforge/native/build/MANAGED-SHA256SUMS
             payloadforge/native/runtime.c
             payloadforge/native/transport.c
             payloadforge/native/transport.h
