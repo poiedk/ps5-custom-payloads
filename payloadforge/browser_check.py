@@ -44,6 +44,11 @@ def run():
                 expect(page.locator("#session")).to_contain_text("Connected")
                 assert page.locator("#token").input_value()==""
                 assert list(root.iterdir())==[]
+                page.locator("#catalog").click()
+                expect(page.locator("#catalog-rows tr")).to_have_count(9)
+                expect(page.locator("#catalog-meta")).to_contain_text("0 companion bundles")
+                assert "omnipad" not in [x.inner_text() for x in page.locator("#catalog-rows td:nth-child(2)").all()]
+                assert list(root.iterdir())==[]
                 def select(version):
                     for name,ext in (("manifest","json"),("archive","zip")):
                         path=fixtures/("demo-v"+version+"."+ext)
