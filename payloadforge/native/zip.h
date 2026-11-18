@@ -13,4 +13,9 @@ typedef struct {
 } pf_zip_entry;
 /* Strict ZIP_STORED subset. Read-only views of caller-owned bytes. */
 int pf_zip_scan(const unsigned char *buf,size_t n,pf_zip_entry *out,size_t capacity,size_t *count);
+/* Extended reader: owned must have capacity entries, initially empty.
+ * Stored entries borrow archive bytes; deflated entries own expanded bytes.
+ * On failure count is zero and all allocated bytes are released. */
+int pf_zip_scan_owned(const unsigned char *buf,size_t n,pf_zip_entry *out,unsigned char **owned,size_t capacity,size_t *count);
+void pf_zip_release(unsigned char **owned,size_t capacity);
 #endif
