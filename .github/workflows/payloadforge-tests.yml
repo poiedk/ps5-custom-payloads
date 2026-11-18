@@ -214,3 +214,19 @@ jobs:
           name: payloadforge-0.1.0-alpha-host-preview
           path: dist/
           if-no-files-found: error
+
+      - name: Retrieve managed ELF from this successful build
+        uses: actions/download-artifact@v4
+        with:
+          name: payloadforge-runtime-managed-development
+          path: ${{ runner.temp }}/managed-artifact
+      - name: Assemble isolated demo hardware test kit
+        run: |
+          python3 -m payloadforge.rc_kit --artifact "$RUNNER_TEMP/managed-artifact" --out demo-hardware-kit --commit "$GITHUB_SHA" --run "$GITHUB_RUN_ID"
+          cd demo-hardware-kit
+          sha256sum --check SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: payloadforge-0.2.0-rc0-demo-hardware-kit
+          path: demo-hardware-kit/
+          if-no-files-found: error
