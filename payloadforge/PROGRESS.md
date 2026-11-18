@@ -246,3 +246,8 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - [Run 44372464719](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44372464719), c14ee9a: all three jobs succeeded. Actual host log: `Ran 366 tests in 17.871s` / `OK`. Both ELF builds cross-compiled.
 - Eight tests for POST authentication and confirmation, strict arguments, backup/rollback/uninstall/quarantine and isolation from read-only dispatch. PR #15 merged into development only at 9d658c2ca6df8da89a5d9b046f239f0acf9cc3d7.
 - Runtime artifact 14460610499, SHA-256 3be8d66743b00d7223ec4eee4799c28060585c7410da4a3456aa79ca9cde8958. Mutation API still not wired to sockets. No hardware test.
+
+### N13-E — bounded authenticated upload protocol
+- [Run 44373948402](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44373948402), commit 5b911e8: all three jobs succeeded. Actual host log: `Ran 376 tests in 19.642s` / `OK`. Both native ELF targets cross-compiled.
+- Ten tests exercise header-first authentication, binary envelope lengths/hashes, malformed inputs, verify without writes, install/upgrade/downgrade and preserved configuration. PR #16 merged into development only at 376d774.
+- Runtime artifact 14461416058, SHA-256 f352b0f9458ac5575ef8f5d110d9707d250e6fdfbb82a8ac5d4534f484615e32. No network upload active yet; no console test.
