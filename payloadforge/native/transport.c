@@ -97,6 +97,7 @@ static int asset_response(int fd,unsigned asset,int64_t deadline){
  case 1:mime="text/html; charset=utf-8";bytes=pf_ui_html;length=sizeof pf_ui_html-1;break;
  case 2:mime="text/css; charset=utf-8";bytes=pf_ui_css;length=sizeof pf_ui_css-1;break;
  case 3:mime="application/javascript; charset=utf-8";bytes=pf_ui_js;length=sizeof pf_ui_js-1;break;
+ case 4:mime="application/json; charset=utf-8";bytes=pf_ui_catalog;length=sizeof pf_ui_catalog-1;break;
  default:return -1;
  }
  char head[1024];
