@@ -251,3 +251,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - [Run 44373948402](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44373948402), commit 5b911e8: all three jobs succeeded. Actual host log: `Ran 376 tests in 19.642s` / `OK`. Both native ELF targets cross-compiled.
 - Ten tests exercise header-first authentication, binary envelope lengths/hashes, malformed inputs, verify without writes, install/upgrade/downgrade and preserved configuration. PR #16 merged into development only at 376d774.
 - Runtime artifact 14461416058, SHA-256 f352b0f9458ac5575ef8f5d110d9707d250e6fdfbb82a8ac5d4534f484615e32. No network upload active yet; no console test.
+
+### N13-F — separate demo-managed loopback runtime
+- [Run 44374904695](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44374904695), commit d267dc1: all three jobs succeeded. Actual host log: `Ran 383 tests in 69.627s` / `OK`; SDK cross-compiled three ELF targets.
+- Seven host process tests cover explicit mode, PS5 root policy compiled on host, authentication before upload body, interrupted upload with no mutation, invalid hashes and full socket lifecycle (verify/install/backup/upgrade/rollback/uninstall).
+- PR #17 merged into development only at cf04b9c. Managed-development ELF artifact 14460717031, SHA-256 3a7e31decf0e42e0c2f72fe8487f9cbb5e95f2acd01a25c86227914de87c68b4. Read-only artifact remains separate.
+- Managed runtime PS5 target accepts only existing private /data/payloadforge-demo, loopback and explicit invocation. No real PS5 runtime, loader argument/output, browser, memory or hardware filesystem tests. No stock payload integration.
