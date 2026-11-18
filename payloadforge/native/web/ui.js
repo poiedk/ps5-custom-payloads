@@ -31,7 +31,7 @@ function envelope(){
 async function request(path,method,body){
  if(!hex.test(token))throw new Error("Connect to the local session first.");
  var headers={"Authorization":"Bearer "+token};
- var options={method:method||"GET",headers:headers,cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer"};
+ var options={method:method||"GET",headers:headers,cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"same-origin"};
  if(options.method==="POST"){headers["X-PayloadForge-Confirm"]="yes";if(body){headers["Content-Type"]="application/octet-stream";options.body=body;}else options.body="";}
  var response=await fetch(path,options);
  var data=await response.json();
