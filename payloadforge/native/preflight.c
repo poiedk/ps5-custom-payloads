@@ -38,6 +38,12 @@ int main(void){
     int valid=expanded&&!memcmp(expanded,"hello",5);
     pf_inflate_free(expanded);
     EXPECT(valid);
+    const unsigned char gzip_hello[]={0x1f,0x8b,0x08,0x00,0x00,0x00,0x00,0x00,0x02,0x03,0xcb,0x48,0xcd,0xc9,0xc9,0x07,0x00,0x86,0xa6,0x10,0x36,0x05,0x00,0x00,0x00};
+    size_t expanded_n=0;expanded=NULL;
+    EXPECT(pf_gzip_expand(gzip_hello,sizeof gzip_hello,&expanded,&expanded_n)==0);
+    valid=expanded&&expanded_n==5&&!memcmp(expanded,"hello",5);
+    pf_inflate_free(expanded);
+    EXPECT(valid);
     puts("PayloadForge native preflight: OK (read-only; not installer)");
     return 0;
 }
