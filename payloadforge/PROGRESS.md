@@ -216,3 +216,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Ten Linux-only process-exit tests wrap renameat in the test library, terminate the child process before/after staging publication or active marker rename, and inspect the persisted managed state for installation, update, rollback and uninstall. No fault hooks in the production build.
 - PR #10 merged into development ONLY at 340282f. Read-only ELF artifact 14421503531, SHA-256 818ba6cc7101168716ca1fd6bef7b765e1ef98d5a26d317b18f57903da736f6a.
 - Process termination is not a simulated storage power loss and does not establish PS5 durability. Inactive/staged generations and pending markers remain retained; explicit recovery/retry policy and native daemon are still pending.
+
+### N12-C — explicit non-destructive recovery retry
+- [Run 44365914969](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44365914969), commit 8baee55: all 3 CI jobs succeeded. Actual log: `Ran 334 tests in 15.751s` / `OK`; SDK cross-build succeeded.
+- 10 additional tests cover retry after an interrupted initial publication, preserved staged content, active generation protection, stale observations, corrupt active state, symlink refusal, and quarantine collisions.
+- PR #11 merged into development ONLY at 4a6eeaf. Read-only ELF artifact 14456915854, SHA-256 a98f2752eabe3b8592e6fe0acf26edfbe7494ed32dc486f299307e436a07fdf8.
+- Explicit quarantine of one named remnant only; existing lock, checked CURRENT marker/identity, integrity and private types. Move to separate recovery-quarantine hierarchy without deletion or overwrite; rerun the original verified action after inspection. Invalid CURRENT or corrupt state stays blocked for manual investigation; no automatic reconstruction or promotion. No hardware execution.
