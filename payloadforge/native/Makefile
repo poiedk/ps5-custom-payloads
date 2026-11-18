@@ -1,6 +1,7 @@
 HOST_CC ?= cc
 PS5_PAYLOAD_SDK ?= /opt/ps5-payload-sdk
 PS5_CC = $(PS5_PAYLOAD_SDK)/bin/prospero-clang
+PYTHON ?= python3
 FLAGS = -std=c11 -O2 -Wall -Wextra -Werror
 ZLIB_DIR ?= $(CURDIR)/build/zlib
 ZLIB_FILES = adler32.c crc32.c inflate.c inffast.c inftrees.c zutil.c
@@ -33,13 +34,17 @@ build/payloadforge-runtime-read-only.elf: $(RUNTIME_SRC) $(RUNTIME_HDR)
 	mkdir -p build
 	"$(PS5_CC)" $(FLAGS) -DZ_SOLO -I"$(ZLIB_DIR)" $(RUNTIME_SRC) $(ZLIB_SRC) -o $@
 
+UI_ASSETS = web/index.html web/ui.css web/ui.js
+build/ui_assets.h: embed_ui.py $(UI_ASSETS)
+	$(PYTHON) embed_ui.py $@
+
 host-managed: build/payloadforge-runtime-managed-host
 ps5-managed: build/payloadforge-runtime-managed-development.elf
-build/payloadforge-runtime-managed-host: $(RUNTIME_SRC) $(RUNTIME_HDR)
+build/payloadforge-runtime-managed-host: $(RUNTIME_SRC) $(RUNTIME_HDR) build/ui_assets.h
 	mkdir -p build
-	$(HOST_CC) $(FLAGS) -DPF_ENABLE_MANAGED $(RUNTIME_SRC) -o $@ -lz
-build/payloadforge-runtime-managed-development.elf: $(RUNTIME_SRC) $(RUNTIME_HDR)
+	$(HOST_CC) $(FLAGS) -DPF_ENABLE_MANAGED -DPF_ENABLE_UI -Ibuild $(RUNTIME_SRC) -o $@ -lz
+build/payloadforge-runtime-managed-development.elf: $(RUNTIME_SRC) $(RUNTIME_HDR) build/ui_assets.h
 	test -x "$(PS5_CC)"
 	test -f "$(ZLIB_DIR)/zlib.h"
 	mkdir -p build
-	"$(PS5_CC)" $(FLAGS) -DPF_ENABLE_MANAGED -DPF_PS5_BUILD -DZ_SOLO -I"$(ZLIB_DIR)" $(RUNTIME_SRC) $(ZLIB_SRC) -o $@
+	"$(PS5_CC)" $(FLAGS) -DPF_ENABLE_MANAGED -DPF_ENABLE_UI -Ibuild -DPF_PS5_BUILD -DZ_SOLO -I"$(ZLIB_DIR)" $(RUNTIME_SRC) $(ZLIB_SRC) -o $@

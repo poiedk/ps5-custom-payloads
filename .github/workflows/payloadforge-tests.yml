@@ -17,6 +17,7 @@ jobs:
       - run: python3 -m pip install 'Pillow>=11,<13'
       - run: python3 -m unittest discover -s payloadforge -p 'test_*.py' -v
       - run: make -C payloadforge/native host
+      - run: node --check payloadforge/native/web/ui.js
   native-preflight:
     runs-on: ubuntu-24.04
     steps:
@@ -181,6 +182,10 @@ jobs:
             payloadforge/native/tar.h
             payloadforge/native/fetch_zlib.py
             payloadforge/native/build/zlib/zlib-1.4.tar.gz
+            payloadforge/native/embed_ui.py
+            payloadforge/native/web/index.html
+            payloadforge/native/web/ui.css
+            payloadforge/native/web/ui.js
             payloadforge/native/Makefile
             payloadforge/COPYING
           if-no-files-found: error

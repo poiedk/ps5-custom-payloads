@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="same-origin">
+<title>PayloadForge | Development</title>
+<link rel="stylesheet" href="/ui.css">
+<script src="/ui.js" defer></script>
+</head>
+<body>
+<header class="top"><div><span class="brand">PF</span><strong>PayloadForge</strong></div><span class="tag">DEVELOPMENT / LOCAL</span></header>
+<main>
+<section class="hero"><p class="eyebrow">MANAGED PACKAGES</p><h1>Package control center</h1><p>Local, explicit, data-only transactions. Verify before you change anything. No payload execution.</p><p class="warning">Development demo store only. Console runtime and browser compatibility are not yet verified.</p></section>
+<section class="panel"><h2>Session</h2><p class="muted">Enter the ephemeral token shown by the local runtime. It is not saved by this application.</p>
+<div class="fields"><label for="token">Session token</label><input id="token" type="password" maxlength="64" autocomplete="off" spellcheck="false"><div class="actions"><button id="connect" type="button">Connect</button><button id="disconnect" type="button" class="secondary">Clear session</button></div></div><p id="session" role="status">Not connected</p></section>
+<div class="layout">
+<section class="panel"><p class="eyebrow">01 / PACKAGE</p><h2>Verify and install</h2><p class="muted">Supply a data-only archive, its external manifest and independently obtained SHA-256 values. Maximum combined upload: 12 MiB.</p>
+<div class="fields"><label for="manifest">Manifest (JSON)</label><input id="manifest" type="file" accept=".json,application/json"><label for="manifest-hash">Expected manifest SHA-256</label><input id="manifest-hash" type="text" maxlength="64" spellcheck="false" autocomplete="off"><label for="archive">Archive (ZIP / TAR.GZ)</label><input id="archive" type="file" accept=".zip,.gz,.tar.gz,application/zip,application/gzip"><label for="archive-hash">Expected archive SHA-256</label><input id="archive-hash" type="text" maxlength="64" spellcheck="false" autocomplete="off"><button id="verify" type="button" disabled>Verify package</button></div>
+<p id="verified" class="muted">No verified package</p>
+<label class="check"><input id="package-confirm" type="checkbox"> I reviewed the package identity and intend to change the demo store.</label>
+<div class="actions"><button id="install" type="button" disabled>Install</button><button id="upgrade" type="button" disabled>Upgrade</button><button id="downgrade" type="button" class="secondary" disabled>Downgrade</button></div></section>
+<section class="panel"><p class="eyebrow">02 / STORE</p><h2>Package operations</h2><div class="fields"><label for="package-id">Package ID</label><input id="package-id" type="text" maxlength="48" value="demo" spellcheck="false" autocomplete="off"><div class="actions"><button id="status" type="button" disabled>Inspect status</button><button id="recovery" type="button" class="secondary" disabled>Inspect recovery</button></div>
+<label for="snapshot">Snapshot SHA-256 / ID</label><input id="snapshot" type="text" maxlength="64" spellcheck="false" autocomplete="off">
+<label for="config">Uninstall configuration policy</label><select id="config"><option value="keep">Keep configuration</option><option value="drop">Drop active configuration (backup remains)</option></select>
+<label class="check"><input id="control-confirm" type="checkbox"> I intend to perform the selected managed operation.</label>
+<div class="actions"><button id="backup" type="button" disabled>Backup</button><button id="rollback" type="button" class="secondary" disabled>Rollback</button><button id="uninstall" type="button" class="danger" disabled>Uninstall</button></div>
+<h3>Recovery quarantine</h3><p class="muted">Inspect recovery first. Select an exact remnant type and ID. Nothing is automatically selected or deleted.</p>
+<label for="kind">Remnant type</label><select id="kind"><option value="1">Staged generation</option><option value="2">Staged backup</option><option value="3">Pending activation</option><option value="4">Pending uninstall</option><option value="5">Inactive generation</option></select>
+<label for="object">Remnant ID</label><input id="object" type="text" maxlength="64" autocomplete="off" spellcheck="false"><button id="quarantine" type="button" class="secondary" disabled>Quarantine selected remnant</button></div></section>
+</div>
+<section class="panel log"><div class="log-head"><h2>Operation result</h2><button id="clear-result" type="button" class="secondary">Clear</button></div><pre id="result" aria-live="polite">Connect to inspect the local demo store.</pre><p class="muted">If a connection fails after an action, inspect the store before retrying. Verification does not establish provenance or dependency compatibility.</p></section>
+</main><footer>PayloadForge v0.2 &middot; GPL-3.0-or-later &middot; No external resources</footer>
+</body></html>
