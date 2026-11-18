@@ -63,6 +63,7 @@ static int check_deps(const pf_dep *d,size_t n){
 }
 int pf_state_validate(const pf_package_state *s,size_t n){
  if(n>PF_STATE_MAX||(n&&!s))return -1;
+ size_t resource_total=0,dep_total=0;
  for(size_t i=0;i<n;i++){
   const pf_package_state *p=s+i;
   size_t idn=bounded(p->id,sizeof p->id),vn=bounded(p->version,sizeof p->version);
@@ -70,6 +71,8 @@ int pf_state_validate(const pf_package_state *s,size_t n){
   for(size_t j=0;j<i;j++)if(!strcmp(p->id,s[j].id))return -1;
   if(check_deps(p->dependencies,p->dependency_count)||check_deps(p->conflicts,p->conflict_count))return -1;
   if(p->resource_count>PF_RESOURCE_MAX||(p->resource_count&&!p->resources))return -1;
+  resource_total+=p->resource_count;dep_total+=p->dependency_count+p->conflict_count;
+  if(resource_total>1024||dep_total>4096)return -1;
   for(size_t j=0;j<p->resource_count;j++){
    const pf_resource *r=p->resources+j;
    if(r->kind==PF_TCP||r->kind==PF_UDP){if(!r->port||r->port>65535)return -1;}
