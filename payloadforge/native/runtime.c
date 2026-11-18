@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
-/* Explicit read-only session. No arguments => no listener, no filesystem writes. */
+/* Explicit runtime session. No arguments => no listener or filesystem writes. */
 #define _POSIX_C_SOURCE 200809L
 #define _DEFAULT_SOURCE 1
 #include "transport.h"
@@ -61,15 +61,29 @@ static int64_t milliseconds(void){
  if(clock_gettime(CLOCK_MONOTONIC,&ts))return -1;
  return (int64_t)ts.tv_sec*1000+ts.tv_nsec/1000000;
 }
+#ifdef PF_ENABLE_MANAGED
+#define MODE "--serve-managed"
+#define LABEL "managed development"
+#define SERVE pf_http_serve_managed_one
+#define WINDOW 10000u
+#else
+#define MODE "--serve-read-only"
+#define LABEL "read-only"
+#define SERVE pf_http_serve_one
+#define WINDOW 1000u
+#endif
 int main(int argc,char **argv){
  /* Separate runtime artifact, explicitly opt in. Never choose a default root. */
  unsigned port=0,seconds=0;
- if(argc!=8||strcmp(argv[1],"--serve-read-only")||strcmp(argv[2],"--root")||
+ if(argc!=8||strcmp(argv[1],MODE)||strcmp(argv[2],"--root")||
     strcmp(argv[4],"--port")||strcmp(argv[6],"--seconds")||
     parse_uint(argv[5],65535,&port)||parse_uint(argv[7],300,&seconds)||!seconds){
-  fputs("Usage: payloadforge-runtime --serve-read-only --root /private/path --port 0 --seconds 60\n",stderr);
+  fputs("Usage: payloadforge-runtime " MODE " --root /private/path --port 0 --seconds 60\n",stderr);
   return 2;
  }
+#if defined(PF_ENABLE_MANAGED) && defined(PF_PS5_BUILD)
+ if(strcmp(argv[3],"/data/payloadforge-demo")){fputs("Managed PS5 development root must be /data/payloadforge-demo\n",stderr);return 2;}
+#endif
  int root=open_private(argv[3]);if(root<0){fputs("Private existing root required\n",stderr);return 1;}
  char token[65]={0};int listener=-1,rc=1;unsigned actual=0;
  if(entropy(token)){fputs("Secure entropy unavailable\n",stderr);goto done;}
@@ -80,13 +94,13 @@ int main(int argc,char **argv){
  int64_t now=milliseconds();if(now<0)goto done;
  int64_t deadline=now+(int64_t)seconds*1000;
  /* Only local launcher stdout, never stored or served by HTTP. */
- if(printf("PayloadForge read-only runtime\nhttp://127.0.0.1:%u\nSession token: %s\n",actual,token)<0||fflush(stdout))goto done;
+ if(printf("PayloadForge " LABEL " runtime\nhttp://127.0.0.1:%u\nSession token: %s\n",actual,token)<0||fflush(stdout))goto done;
  rc=0;
  while(!stop){
   now=milliseconds();if(now<0){rc=1;break;}
   if(now>=deadline)break;
   unsigned left=(unsigned)(deadline-now);
-  (void)pf_http_serve_one(listener,root,token,left>1000?1000:left);
+  (void)SERVE(listener,root,token,left>WINDOW?WINDOW:left);
  }
  done:if(listener>=0)close(listener);
  close(root);erase(token,sizeof token);return rc;
