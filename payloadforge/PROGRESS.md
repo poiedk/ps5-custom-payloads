@@ -235,3 +235,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Runs 44367559486 and 44368049604 failed source download integrity (zlib); 44368459801 verified source but failed SDK compilation on INADDR_LOOPBACK. Fixed portable IPv4 loopback constant, retained pinned zlib digest, verified archived source-only fallback in successful run. Fallback artifact is expiring, not a permanent dependency mirror.
 - PR #13 merged into development ONLY at 84c3a7a. Preflight artifact 14457962368, ELF SHA256 ec843bfc688e035c4805e4f76b5f77790e824657a6b57b607a6a3f61c41227d9.
 - Socket I/O deadline does not bound a store lock wait. No entry point, autostart, LAN binding or mutations yet.
+
+### N13-C — separate explicit read-only runtime
+- [Run 44371605704](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44371605704), commit aab519d: all three jobs succeeded. Actual host log: `Ran 358 tests in 19.858s` / `OK`. SDK cross-compiled both distinct ELF targets.
+- Six host process tests cover explicit arguments, existing private directory, symlink refusal, fresh entropy token and authenticated socket session with expiry. No default listener or filesystem writes.
+- PR #14 merged into development ONLY at 87d1189. Read-only runtime development artifact 14459351447, ELF SHA-256 dbf09ec2183810febaec50c2d8c2dc5b546409155ce9961e528e205d534e70a8. Preflight artifact 14459456295, unchanged ELF SHA-256 ec843bfc688e035c4805e4f76b5f77790e824657a6b57b607a6a3f61c41227d9.
+- Loopback only. Requires explicit argv, secure entropy and local launcher output; no PS5 launcher, browser or hardware verification. Store lock wait may delay session exit. Runtime is not an installer or release candidate.
