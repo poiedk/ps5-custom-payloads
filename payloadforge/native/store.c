@@ -585,3 +585,114 @@ int pf_status(int root,const char *id,char version[65],char generation[65]){
  done:if(gen>=0)close(gen);if(gens>=0)close(gens);if(app>=0)close(app);if(apps>=0)close(apps);if(lock>=0)close(lock);
  free(files);return rc;
 }
+
+/* Inspection never creates even a lock file. Existing writers take the
+ * exclusive lock; readers share it. As elsewhere, callers serialize threads. */
+static int recovery_lock(int root){
+ struct stat st;
+ if(fstat(root,&st)||!S_ISDIR(st.st_mode)||st.st_uid!=geteuid()||(st.st_mode&0077))return -1;
+ int lock=openat(root,".lock",O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_NONBLOCK);
+ if(lock<0)return errno==ENOENT?-2:-1;
+ if(fstat(lock,&st)||!S_ISREG(st.st_mode)||st.st_uid!=geteuid()||st.st_nlink!=1||(st.st_mode&0077)){close(lock);return -1;}
+ struct flock l={0};l.l_type=F_RDLCK;l.l_whence=SEEK_SET;
+ int rc;do{rc=fcntl(lock,F_SETLKW,&l);}while(rc<0&&errno==EINTR);
+ if(rc){close(lock);return -1;}return lock;
+}
+static int named_hash(const char *name,const char *prefix){
+ size_t n=strlen(prefix);return !strncmp(name,prefix,n)&&lower_hash(name+n);
+}
+static int safe_entry(int d,const char *name,int want_dir){
+ struct stat st;
+ if(fstatat(d,name,&st,AT_SYMLINK_NOFOLLOW)||st.st_uid!=geteuid()||(st.st_mode&0077))return 0;
+ return want_dir?S_ISDIR(st.st_mode):S_ISREG(st.st_mode)&&st.st_nlink==1;
+}
+/* mode 0 app, 1 generations, 2 backups. Count-only, never descend
+ * into inactive data or follow links. */
+static int recovery_scan(int d,int mode,pf_recovery *report){
+ int scan=dir_at(d,".",0);if(scan<0)return -1;
+ DIR *dir=fdopendir(scan);if(!dir){close(scan);return -1;}
+ size_t visited=0;int rc=-1;
+ for(;;){
+  errno=0;struct dirent *ent=readdir(dir);
+  if(!ent){if(!errno)rc=0;break;}
+  const char *name=ent->d_name;
+  if(!strcmp(name,".")||!strcmp(name,".."))continue;
+  if(++visited>4096)break;
+  if(!mode){
+   if(!strcmp(name,"CURRENT")){if(!safe_entry(d,name,0))report->unexpected_entries++;continue;}
+   if(!strcmp(name,"generations")||!strcmp(name,"backups")){if(!safe_entry(d,name,1))report->unexpected_entries++;continue;}
+   if(named_hash(name,".pointer-")||named_hash(name,".uninstall-")){
+    if(safe_entry(d,name,0))report->pending_markers++;else report->unexpected_entries++;
+    continue;
+   }
+  }else{
+   if(named_hash(name,".stage-")){
+    if(!safe_entry(d,name,1))report->unexpected_entries++;
+    else if(mode==1)report->staged_generations++;else report->staged_backups++;
+    continue;
+   }
+   if(lower_hash(name)){
+    if(!safe_entry(d,name,1))report->unexpected_entries++;
+    else if(mode==2)report->backups++;
+    else if(report->marker!=1||strcmp(name,report->current))report->inactive_generations++;
+    continue;
+   }
+  }
+  report->unexpected_entries++;
+ }
+ closedir(dir);return rc;
+}
+int pf_recovery_inspect(int root,const char *id,pf_recovery *report){
+ if(!report)return -1;
+ memset(report,0,sizeof(*report));
+ if(!id||!pf_id_valid(id,strlen(id)))return -1;
+ int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,backups=-1,gen=-1,data=-1;
+ pf_file *files=NULL;pf_manifest plan;
+ lock=recovery_lock(root);
+ if(lock==-2){return exists_at(root,"apps")==0?0:-1;}
+ if(lock<0)goto done;
+ int present=exists_at(root,"apps");if(present==0){rc=0;goto done;}if(present<0)goto done;
+ apps=dir_at(root,"apps",0);if(apps<0)goto done;
+ present=exists_at(apps,id);if(present==0){rc=0;goto done;}if(present<0)goto done;
+ app=dir_at(apps,id,0);if(app<0)goto done;
+ int marker=read_marker(app,report->current);
+ report->marker=marker<0?4u:(unsigned)marker;
+ if(marker<0)report->integrity=2;
+ if(recovery_scan(app,0,report))goto done;
+ present=exists_at(app,"generations");if(present<0)goto done;
+ if(present){gens=dir_at(app,"generations",0);if(gens<0||recovery_scan(gens,1,report))goto done;}
+ present=exists_at(app,"backups");if(present<0)goto done;
+ if(present){backups=dir_at(app,"backups",0);if(backups<0||recovery_scan(backups,2,report))goto done;}
+ if(marker>0){
+  files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));if(!files)goto done;
+  report->integrity=2;
+  if(marker>=2){
+   char generation[65];
+   if(backups>=0&&!verify_snapshot(backups,id,report->current,&plan,files,generation))report->integrity=1;
+  }else if(gens>=0){
+   gen=dir_at(gens,report->current,0);
+   if(gen>=0&&!load_generation(gen,report->current,id,&plan,files)){
+    data=dir_at(gen,"data",0);
+    if(data>=0){
+     size_t total=0;int okay=1;
+     for(size_t i=0;i<plan.count;i++){
+      size_t n;unsigned char *raw=read_member(data,files[i].path,&n);
+      if(!raw){okay=0;break;}
+      int same=n==files[i].size&&pf_sha256_matches(raw,n,files[i].sha256);
+      free(raw);
+      if(n>PF_ZIP_MAX_TOTAL-total||(!same&&!files[i].preserve)){okay=0;break;}
+      total+=n;if(!same&&files[i].preserve)report->changed_configs++;
+     }
+     if(okay)report->integrity=1;
+    }
+   }
+  }
+ }
+ rc=0;
+ done:free(files);if(data>=0)close(data);if(gen>=0)close(gen);if(backups>=0)close(backups);
+ if(gens>=0)close(gens);
+ if(app>=0)close(app);
+ if(apps>=0)close(apps);
+ if(lock>=0)close(lock);
+ return rc;
+}
