@@ -50,6 +50,9 @@ int pf_http_listen(unsigned port,unsigned *bound_port){
  *bound_port=0;if(port>65535)return -1;
  int fd=socket(AF_INET,SOCK_STREAM,0);if(fd<0)return -1;
  struct sockaddr_in address={0};address.sin_family=AF_INET;
+ #ifdef __FreeBSD__
+ address.sin_len=sizeof address;
+#endif
  address.sin_port=htons((uint16_t)port);address.sin_addr.s_addr=htonl(INADDR_LOOPBACK);
  if(nonblock(fd)||bind(fd,(struct sockaddr *)&address,sizeof address)||listen(fd,4)||listener_port(fd,bound_port)){
   close(fd);*bound_port=0;return -1;
