@@ -6,21 +6,25 @@ from pathlib import Path
 import tarfile
 import urllib.request
 
-URL="https://zlib.net/fossils/zlib-1.4.tar.gz"
+URLS=(
+    "https://www.zlib.net/zlib-1.4.tar.gz",
+    "https://www.zlib.net/fossils/zlib-1.4.tar.gz",
+    "https://zlib.net/fossils/zlib-1.4.tar.gz",
+)
 SHA256="02dd159783677a749c04adbdd02b55b8a2bcc7e054f51b76b549199a916ad584"
 LIMIT=4*1024*1024
 FILES={"adler32.c","crc32.c","crc32.h","inflate.c","inflate.h","inffast.c","inffast.h",
        "inftrees.c","inftrees.h","inffixed.h","zlib.h","zconf.h","zutil.c","zutil.h","LICENSE"}
 
-def fetch(destination):
+def fetch(destination, fallback=None):
     dest=Path(destination)
     dest.mkdir(parents=True,exist_ok=False)
     # Only the identical pinned archive is acceptable; do not learn a new hash on retry.
     raw=None
     import time
-    for attempt in range(3):
+    for attempt,url in enumerate(URLS):
         try:
-            req=urllib.request.Request(URL,headers={"User-Agent":"PayloadForge-build","Accept-Encoding":"identity","Cache-Control":"no-cache"})
+            req=urllib.request.Request(url,headers={"User-Agent":"PayloadForge-build","Accept-Encoding":"identity","Cache-Control":"no-cache"})
             with urllib.request.urlopen(req,timeout=60) as response:
                 if not response.geturl().startswith("https://"):
                     raise ValueError("HTTPS required")
@@ -31,9 +35,16 @@ def fetch(destination):
             raw=candidate
             break
         except (OSError,ValueError) as exc:
-            print("Pinned zlib fetch attempt "+str(attempt+1)+": "+str(exc),flush=True)
-            if attempt<2:
+            print("Pinned zlib fetch attempt "+str(attempt+1)+" ("+url+"): "+str(exc),flush=True)
+            if attempt+1<len(URLS):
                 time.sleep(2**attempt)
+    if raw is None and fallback is not None:
+        with Path(fallback).open("rb") as source:
+            candidate=source.read(LIMIT+1)
+        if len(candidate)>LIMIT or hashlib.sha256(candidate).hexdigest()!=SHA256:
+            raise ValueError("Archived zlib source checksum or size mismatch")
+        raw=candidate
+        print("Verified archived zlib source fallback",flush=True)
     if raw is None:
         raise ValueError("Pinned zlib source unavailable; refusing native build")
     found=set()
@@ -57,4 +68,6 @@ def fetch(destination):
 
 if __name__=="__main__":
     p=argparse.ArgumentParser();p.add_argument("destination",type=Path)
-    fetch(p.parse_args().destination)
+    p.add_argument("--fallback",type=Path)
+    args=p.parse_args()
+    fetch(args.destination,args.fallback)
