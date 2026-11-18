@@ -4,7 +4,7 @@
 #include "store.h"
 #include "core.h"
 #include "manifest.h"
-#include "zip.h"
+#include "tar.h"
 #include "sha256.h"
 #include "version.h"
 #include <errno.h>
@@ -344,7 +344,7 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  const unsigned char *manifest,size_t mn,const char *mh,int action){
  int update=action!=0;
  int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,stage=-1,data=-1;
- pf_file *files=NULL,*old=NULL,*check=NULL;pf_zip_entry *entries=NULL;unsigned char **owned=NULL;size_t owned_count=0;
+ pf_file *files=NULL,*old=NULL,*check=NULL;pf_zip_entry *entries=NULL;unsigned char **owned=NULL,*expanded=NULL;size_t owned_count=0;
  int previous=-1,prior_data=-1,backups=-1,source_snapshot=-1;unsigned char *effective=NULL;size_t effective_n=0;
  int merge=update,reinstall=0;
  pf_manifest prior={0};char current_id[65]={0};
@@ -355,7 +355,7 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  if(!files)goto done;
  meta=calloc(1,sizeof(*meta));if(!meta||pf_bundle_verify_metadata(archive,an,ah,manifest,mn,mh,&plan,files,PF_ZIP_MAX_MEMBERS,meta))goto done;
  owned_count=plan.count;entries=calloc(owned_count,sizeof(*entries));owned=calloc(owned_count,sizeof(*owned));if(!entries||!owned)goto done;
- if(pf_zip_scan_owned(archive,an,entries,owned,owned_count,&count)||count!=plan.count)goto done;
+ if(pf_archive_scan(archive,an,entries,owned,&expanded,owned_count,&count)||count!=plan.count)goto done;
  lock=open_root_lock(root);if(lock<0)goto done;
  apps=dir_at(root,"apps",1);if(apps<0||fsync(root))goto done;
  app=dir_at(apps,plan.id,1);if(app<0||fsync(apps))goto done;
@@ -446,7 +446,7 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  if(app>=0)close(app);
  if(apps>=0)close(apps);
  if(lock>=0)close(lock);
- pf_zip_release(owned,owned_count);free(owned);free(meta);free(effective);free(check);free(old);free(entries);free(files);return rc;
+ pf_archive_release(owned,&expanded,owned_count);free(owned);free(meta);free(effective);free(check);free(old);free(entries);free(files);return rc;
 }
 
 int pf_install_initial(int root,const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh){
