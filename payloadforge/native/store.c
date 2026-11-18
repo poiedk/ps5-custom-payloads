@@ -8,6 +8,7 @@
 #include "sha256.h"
 #include "version.h"
 #include <errno.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -120,13 +121,21 @@ static unsigned char *registry(const pf_manifest *plan,const pf_file *files,size
  memcpy(raw+used,"]}",3);*n=used+2;return raw;
  bad:free(raw);return NULL;
 }
+/* The original, checksum-bound manifest is the canonical dependency metadata.
+ * Effective registry remains schema 1 (actual file hashes and preserved paths). */
+static int parse_upstream(const unsigned char *raw,size_t n,pf_manifest *plan,pf_file *files){
+ pf_manifest_metadata *meta=calloc(1,sizeof(*meta));
+ if(!meta)return -1;
+ int rc=pf_manifest_parse_metadata(raw,n,plan,files,PF_ZIP_MAX_MEMBERS,meta);
+ free(meta);return rc;
+}
 static int load_generation(int gen,const char *generation,const char *id,pf_manifest *out,pf_file *files){
  char mh[65],ah[65],rh[65];size_t n;
  unsigned char *raw=NULL;int rc=-1;
  if(read_hash(gen,"manifest.sha256",mh)||read_hash(gen,"archive.sha256",ah))return -1;
  raw=read_file(gen,"manifest.json",PF_MANIFEST_LIMIT,&n);
  pf_manifest upstream;
- if(!raw||!pf_sha256_matches(raw,n,mh)||pf_manifest_parse(raw,n,&upstream,files,PF_ZIP_MAX_MEMBERS)||strcmp(upstream.id,id))goto done;
+ if(!raw||!pf_sha256_matches(raw,n,mh)||parse_upstream(raw,n,&upstream,files)||strcmp(upstream.id,id))goto done;
  if(!strcmp(generation,ah)){*out=upstream;rc=0;goto done;}
  free(raw);raw=NULL;
  if(read_hash(gen,"registry.sha256",rh))goto done;
@@ -153,6 +162,62 @@ static int read_marker(int app,char id[65]){
   memcpy(id,p+12,64);id[64]=0;if(lower_hash(id))rc=p[77]=='k'?3:2;
  }
  free(p);return rc;
+}
+/* Read active manifests while the root lock is held. Never trust a directory
+ * name alone, never traverse links, never mutate state in this validator. */
+static int generation_metadata(int gen,const char *id,pf_manifest *plan,pf_file *files,pf_manifest_metadata *meta){
+ char h[65];size_t n=0;int rc=-1;
+ if(read_hash(gen,"manifest.sha256",h)||!lower_hash(h))return -1;
+ unsigned char *raw=read_file(gen,"manifest.json",PF_MANIFEST_LIMIT,&n);
+ if(raw&&pf_sha256_matches(raw,n,h)&&!pf_manifest_parse_metadata(raw,n,plan,files,PF_ZIP_MAX_MEMBERS,meta)&&!strcmp(plan->id,id))rc=0;
+ free(raw);return rc;
+}
+static void state_entry(pf_package_state *state,const pf_manifest *plan,const pf_manifest_metadata *meta){
+ memset(state,0,sizeof(*state));
+ memcpy(state->id,plan->id,sizeof state->id);memcpy(state->version,plan->version,sizeof state->version);
+ state->dependencies=meta->dependencies;state->dependency_count=meta->dependency_count;
+ state->conflicts=meta->conflicts;state->conflict_count=meta->conflict_count;
+ state->resources=meta->resources;state->resource_count=meta->resource_count;
+}
+static int active_metadata(int apps,const char *id,pf_manifest *plan,pf_file *scratch,pf_manifest_metadata *meta){
+ int app=-1,gens=-1,gen=-1,rc=-1;char current[65];pf_manifest registry_plan;
+ app=dir_at(apps,id,0);if(app<0)goto done;
+ int marker=read_marker(app,current);
+ if(marker==0||marker==2||marker==3){rc=0;goto done;}
+ if(marker!=1)goto done;
+ gens=dir_at(app,"generations",0);if(gens<0)goto done;
+ gen=dir_at(gens,current,0);if(gen<0||load_generation(gen,current,id,&registry_plan,scratch))goto done;
+ if(generation_metadata(gen,id,plan,scratch,meta)||strcmp(plan->version,registry_plan.version))goto done;
+ rc=1;
+ done:if(gen>=0)close(gen);if(gens>=0)close(gens);if(app>=0)close(app);return rc;
+}
+static int state_gate(int apps,const char *replace,const pf_manifest *proposed,const pf_manifest_metadata *meta){
+ int rc=-1;size_t count=0,visited=0;DIR *dir=NULL;
+ pf_package_state *state=calloc(PF_STATE_MAX,sizeof(*state));
+ pf_manifest_metadata **owned=calloc(PF_STATE_MAX,sizeof(*owned));
+ pf_file *scratch=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*scratch));
+ if(!state||!owned||!scratch)goto end;
+ if(proposed){if(!meta||strcmp(proposed->id,replace))goto end;state_entry(state+count++,proposed,meta);}
+ int scan=dir_at(apps,".",0);if(scan<0)goto end;
+ dir=fdopendir(scan);if(!dir){close(scan);goto end;}
+ for(;;){
+  errno=0;struct dirent *ent=readdir(dir);
+  if(!ent){if(errno)goto end;break;}
+  const char *id=ent->d_name;
+  if(!strcmp(id,".")||!strcmp(id,".."))continue;
+  if(++visited>PF_STATE_MAX*4u||!pf_id_valid(id,strlen(id)))goto end;
+  if(!strcmp(id,replace))continue;
+  pf_manifest plan;pf_manifest_metadata *m=calloc(1,sizeof(*m));if(!m)goto end;
+  int active=active_metadata(apps,id,&plan,scratch,m);
+  if(active<0){free(m);goto end;}
+  if(!active){free(m);continue;}
+  if(count>=PF_STATE_MAX){free(m);goto end;}
+  owned[count]=m;state_entry(state+count++,&plan,m);
+ }
+ rc=pf_state_validate(state,count)?-1:0;
+ end:if(dir)closedir(dir);
+ if(owned)for(size_t i=0;i<PF_STATE_MAX;i++)free(owned[i]);
+ free(scratch);free(owned);free(state);return rc;
 }
 static void snapshot_id(const char *generation,const char *registry_hash,const char *ah,const char *mh,char out[65]){
  char key[256];memcpy(key,generation,64);memcpy(key+64,registry_hash,64);
@@ -182,7 +247,7 @@ static int verify_snapshot(int backups,const char *id,const char *snapshot,pf_ma
  if(!raw||!pf_sha256_matches(raw,n,rh)||pf_manifest_parse(raw,n,plan,files,PF_ZIP_MAX_MEMBERS)||strcmp(plan->id,id))goto done;
  original=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*original));
  upstream=read_file(dir,"manifest.json",PF_MANIFEST_LIMIT,&mn);
- if(!original||!upstream||!pf_sha256_matches(upstream,mn,mh)||pf_manifest_parse(upstream,mn,&up,original,PF_ZIP_MAX_MEMBERS)||!registry_compatible(&up,original,plan,files))goto done;
+ if(!original||!upstream||!pf_sha256_matches(upstream,mn,mh)||parse_upstream(upstream,mn,&up,original)||!registry_compatible(&up,original,plan,files))goto done;
  data=dir_at(dir,"data",0);if(data<0)goto done;
  for(size_t i=0;i<plan->count;i++){
   size_t len;unsigned char *p=read_member(data,files[i].path,&len);
@@ -283,12 +348,12 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  int previous=-1,prior_data=-1,backups=-1,source_snapshot=-1;unsigned char *effective=NULL;size_t effective_n=0;
  int merge=update,reinstall=0;
  pf_manifest prior={0};char current_id[65]={0};
- pf_manifest plan;size_t count=0;
+ pf_manifest plan;size_t count=0;pf_manifest_metadata *meta=NULL;
  struct stat rootstat;
  if(fstat(root,&rootstat)||!S_ISDIR(rootstat.st_mode)||rootstat.st_uid!=geteuid()||(rootstat.st_mode&0077))return -1;
  files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));
  if(!files)goto done;
- if(pf_bundle_verify(archive,an,ah,manifest,mn,mh,&plan,files,PF_ZIP_MAX_MEMBERS))goto done;
+ meta=calloc(1,sizeof(*meta));if(!meta||pf_bundle_verify_metadata(archive,an,ah,manifest,mn,mh,&plan,files,PF_ZIP_MAX_MEMBERS,meta))goto done;
  entries=calloc(plan.count,sizeof(*entries));if(!entries)goto done;
  if(pf_zip_scan(archive,an,entries,plan.count,&count)||count!=plan.count)goto done;
  lock=open_root_lock(root);if(lock<0)goto done;
@@ -296,6 +361,7 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  app=dir_at(apps,plan.id,1);if(app<0||fsync(apps))goto done;
  int current=read_marker(app,current_id);
  if(current<0||(!update&&current==1)||(update&&current!=1)){rc=current>=0?-2:-1;goto done;}
+ if(state_gate(apps,plan.id,&plan,meta))goto done;
  reinstall=current>=2;merge=update||current==3;
  gens=dir_at(app,"generations",1);if(gens<0||fsync(app))goto done;
  if(update){
@@ -380,7 +446,7 @@ static int apply(int root,const unsigned char *archive,size_t an,const char *ah,
  if(app>=0)close(app);
  if(apps>=0)close(apps);
  if(lock>=0)close(lock);
- free(effective);free(check);free(old);free(entries);free(files);return rc;
+ free(meta);free(effective);free(check);free(old);free(entries);free(files);return rc;
 }
 
 int pf_install_initial(int root,const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh){
@@ -401,6 +467,7 @@ int pf_rollback(int root,const char *id,const char *snapshot){
  if(!id||!pf_id_valid(id,strlen(id))||!lower_hash(snapshot))return -1;
  int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,previous=-1,prior_data=-1,backups=-1,target=-1,target_data=-1,stage=-1,data=-1;
  pf_file *files=NULL,*old=NULL,*check=NULL;pf_manifest plan,prior,validated;
+ pf_manifest_metadata *meta=NULL;
  char current[65],source[65],ah[65],mh[65],rh[65],generation[65],previous_backup[65],staging[80],pointer[80];
  size_t mn=0,rn=0,total=0;unsigned char *manifest=NULL,*effective=NULL;
  lock=open_root_lock(root);if(lock<0)goto done;
@@ -413,6 +480,8 @@ int pf_rollback(int root,const char *id,const char *snapshot){
  target=dir_at(backups,snapshot,0);if(target<0||read_hash(target,"archive.sha256",ah)||read_hash(target,"manifest.sha256",mh))goto done;
  manifest=read_file(target,"manifest.json",PF_MANIFEST_LIMIT,&mn);
  if(!manifest||!pf_sha256_matches(manifest,mn,mh))goto done;
+ meta=calloc(1,sizeof(*meta));pf_manifest upstream;
+ if(!meta||pf_manifest_parse_metadata(manifest,mn,&upstream,check,PF_ZIP_MAX_MEMBERS,meta)||strcmp(upstream.id,plan.id)||strcmp(upstream.version,plan.version)||state_gate(apps,id,&plan,meta))goto done;
  target_data=dir_at(target,"data",0);if(target_data<0)goto done;
  previous=dir_at(gens,current,0);if(previous<0||load_generation(previous,current,id,&prior,old))goto done;
  prior_data=dir_at(previous,"data",0);if(prior_data<0)goto done;
@@ -453,7 +522,7 @@ int pf_rollback(int root,const char *id,const char *snapshot){
  if(app>=0)close(app);
  if(apps>=0)close(apps);
  if(lock>=0)close(lock);
- free(effective);free(manifest);free(check);free(old);free(files);return rc;
+ free(meta);free(effective);free(manifest);free(check);free(old);free(files);return rc;
 }
 
 /* Logical deactivation precedes registry-only cleanup. No recursive removal;
@@ -468,6 +537,7 @@ int pf_uninstall(int root,const char *id,int keep,size_t *removed){
  apps=dir_at(root,"apps",0);if(apps<0)goto done;
  app=dir_at(apps,id,0);if(app<0)goto done;
  if(read_marker(app,current)!=1){rc=-2;goto done;}
+ if(state_gate(apps,id,NULL,NULL))goto done;
  gens=dir_at(app,"generations",0);if(gens<0)goto done;
  gen=dir_at(gens,current,0);if(gen<0)goto done;
  files=calloc(PF_ZIP_MAX_MEMBERS,sizeof(*files));if(!files||load_generation(gen,current,id,&plan,files))goto done;
