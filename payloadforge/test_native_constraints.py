@@ -66,3 +66,14 @@ class NativeConstraintTests(unittest.TestCase):
     def test_reverse_dependency(self):
         a=self.row("a",deps=[("b","<2")]);self.assertEqual(self.graph(a,self.row("b","1")),0)
         self.assertEqual(self.graph(a,self.row("b","2")),-2)
+    def test_state_bounds(self):
+        self.assertEqual(self.graph(),0)
+        self.assertEqual(self.graph(*(self.row("p"+str(i)) for i in range(257))),-1)
+        self.assertEqual(self.graph(self.row("a",deps=[("p"+str(i),"*") for i in range(65)])),-1)
+        self.assertEqual(self.graph(self.row("a",resources=[(1,i+1,"") for i in range(129)])),-1)
+    def test_resource_aggregate_limit(self):
+        rows=[self.row("p"+str(j),resources=[(1,j*128+i+1,"") for i in range(128)]) for j in range(9)]
+        self.assertEqual(self.graph(*rows),-1)
+    def test_topological_chain(self):
+        rows=[self.row("p"+str(i),deps=[("p"+str(i+1),"*")] if i<63 else []) for i in range(64)]
+        self.assertEqual(self.graph(*rows),0)
