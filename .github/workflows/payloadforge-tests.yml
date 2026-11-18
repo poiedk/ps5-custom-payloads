@@ -7,6 +7,7 @@ on:
     paths: ['payloadforge/**', 'zip_release.py', 'update.py', '.github/workflows/payloadforge-tests.yml', '.github/workflows/update.yml']
 permissions:
   contents: read
+  actions: read
 jobs:
   archive-tests:
     runs-on: ubuntu-latest
@@ -51,12 +52,27 @@ jobs:
           print("Official SDK "+tag+" SHA-256: "+expected[7:])
           PY
           unzip -q "$RUNNER_TEMP/sdk.zip" -d "$RUNNER_TEMP/sdk"
+      - name: Retrieve previously verified source archive as fallback
+        id: zlib_fallback
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: payloadforge-preflight-read-only
+          run-id: 44366761800
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/payloadforge-zlib-fallback
       - name: Cross-compile read-only PS5 preflight
         run: |
           export PS5_PAYLOAD_SDK="$RUNNER_TEMP/sdk/ps5-payload-sdk"
           export LLVM_CONFIG="$(command -v llvm-config-18)"
           test -x "$LLVM_CONFIG"
-          python3 payloadforge/native/fetch_zlib.py payloadforge/native/build/zlib
+          fallback="$RUNNER_TEMP/payloadforge-zlib-fallback/native/build/zlib/zlib-1.4.tar.gz"
+          if test -f "$fallback"; then
+            python3 payloadforge/native/fetch_zlib.py payloadforge/native/build/zlib --fallback "$fallback"
+          else
+            python3 payloadforge/native/fetch_zlib.py payloadforge/native/build/zlib
+          fi
           make -C payloadforge/native ps5
           cd payloadforge/native/build
           readelf -h payloadforge-preflight.elf
