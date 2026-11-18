@@ -172,3 +172,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - [Run 44245013206](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44245013206), commit 72f8332: all three jobs succeeded. Actual host log: `Ran 254 tests in 10.767s` / `OK`; `PayloadForge native preflight: OK (read-only; not installer)`.
 - 12 native graph tests (including three additional bound/chain tests), native smoke assertions and SDK cross-compile verified. Read-only ELF SHA-256 72ae3a0c88d4675c1dad5cfe91408c8b33f0ec9282dae9f0f55bb772494cf6f7, artifact 14400553778.
 - PR #3 merged into development ONLY at c5e7b93 after all three jobs passed. No merge to main. Manifest and store integration remains a separate gate.
+
+### N10-B — strict manifest metadata and bundle verification
+- [Run 44259990231](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44259990231), commit 4bd89a7: all three jobs succeeded. Actual host log: `Ran 265 tests in 12.781s` / `OK`; native read-only preflight passed cross-compilation.
+- 11 new tests cover metadata parsing, schema bounds, duplicates, malformed paths/constraints, graph validation and verifying exact archive+manifest+member bytes. Legacy mutation entry points still reject nonempty metadata.
+- PR #4 merged into development ONLY at 14c09b3. ELF artifact 14407717435, SHA-256 173ae36ff92ff9c21a132c4fd707419ce058c42e7ef9f66a448c2f5653ab30e1.
+- No PS5 write/execution. Next gate: atomically validate proposed whole managed state for install/update/rollback/uninstall, under store lock.
