@@ -16,7 +16,7 @@ LIMIT=4*1024*1024
 FILES={"adler32.c","crc32.c","crc32.h","inflate.c","inflate.h","inffast.c","inffast.h",
        "inftrees.c","inftrees.h","inffixed.h","zlib.h","zconf.h","zutil.c","zutil.h","LICENSE"}
 
-def fetch(destination):
+def fetch(destination, fallback=None):
     dest=Path(destination)
     dest.mkdir(parents=True,exist_ok=False)
     # Only the identical pinned archive is acceptable; do not learn a new hash on retry.
@@ -38,6 +38,13 @@ def fetch(destination):
             print("Pinned zlib fetch attempt "+str(attempt+1)+" ("+url+"): "+str(exc),flush=True)
             if attempt+1<len(URLS):
                 time.sleep(2**attempt)
+    if raw is None and fallback is not None:
+        with Path(fallback).open("rb") as source:
+            candidate=source.read(LIMIT+1)
+        if len(candidate)>LIMIT or hashlib.sha256(candidate).hexdigest()!=SHA256:
+            raise ValueError("Archived zlib source checksum or size mismatch")
+        raw=candidate
+        print("Verified archived zlib source fallback",flush=True)
     if raw is None:
         raise ValueError("Pinned zlib source unavailable; refusing native build")
     found=set()
@@ -61,4 +68,6 @@ def fetch(destination):
 
 if __name__=="__main__":
     p=argparse.ArgumentParser();p.add_argument("destination",type=Path)
-    fetch(p.parse_args().destination)
+    p.add_argument("--fallback",type=Path)
+    args=p.parse_args()
+    fetch(args.destination,args.fallback)
