@@ -3,6 +3,7 @@
 #include "sha256.h"
 #include "zip.h"
 #include "manifest.h"
+#include "constraints.h"
 #include <stdio.h>
 #include <string.h>
 #define EXPECT(x) do { if (!(x)) { fprintf(stderr,"FAIL: %s\n",#x); return 1; } } while(0)
@@ -20,6 +21,16 @@ int main(void){
     EXPECT(pf_zip_scan((const unsigned char *)"invalid",7,&entry,1,&count)!=0 && count==0);
     pf_manifest plan; pf_file file;
     EXPECT(pf_manifest_parse((const unsigned char *)"{}",2,&plan,&file,1)!=0 && plan.count==0);
+    EXPECT(pf_constraint_match("1.2.3",">=1,<2")==1);
+    EXPECT(pf_constraint_match("2",">=1,<2")==0);
+    EXPECT(pf_constraint_match("1",">2,^1")==-1);
+    const pf_dep needs[]={{"library",">=2"}};
+    pf_package_state states[2]={
+        {.id="demo",.version="1",.dependencies=needs,.dependency_count=1},
+        {.id="library",.version="2"}
+    };
+    EXPECT(pf_state_validate(states,2)==0);
+    EXPECT(pf_state_validate(states,1)==-2);
     puts("PayloadForge native preflight: OK (read-only; not installer)");
     return 0;
 }
