@@ -30,3 +30,5 @@
 - Retry transient zlib source retrieval at most three times, request identity encoding and disable caching. Never relax the pinned hash or size checks; log observed hash/size and fail closed if retrieval remains invalid.
 
 - N11-C: support single-member gzip plus regular-file-only POSIX USTAR with ASCII paths; implicit directories from member paths only. Reject explicit directory headers, PAX/GNU extensions, links and noncanonical padding. Verify gzip CRC, ISIZE, exact stream termination, TAR header checksums and all manifest member hashes. Continue to fail closed on unsupported formats. Use bounded in-memory expansion with explicit buffer ownership; real PS5 memory budget remains unverified.
+
+- N12-A: separate recovery inspection from mutation. Acquire existing shared root lock without creating files, validate active managed bytes while permitting changed preserved configs, verify uninstall snapshot, enumerate remnant names/types with bounded traversal. Never auto-select or delete a generation. Count-only inactive objects are not verified backups; a corrupt or incomplete report requires explicit recovery rather than silent activation.
