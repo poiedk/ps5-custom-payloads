@@ -76,8 +76,8 @@ static int check_headers(const unsigned char *raw,size_t n,size_t first_end,unsi
  }
  if(!complete||pos!=n)return 400;
  if(!hostok||!originok)return 403;
- if(!authok)return 401;
- if(mutation&&(!(seen&4)||!(seen&8)||!confirmed))return 403;
+ if((mutation>=0||(seen&2))&&!authok)return 401;
+ if(mutation>0&&(!(seen&4)||!(seen&8)||!confirmed))return 403;
  if(mutation==2){if(!content_ok||length<=PF_UPLOAD_PREFIX||!body_n)return 400;*body_n=length;}
  return 200;
 
@@ -286,4 +286,26 @@ int pf_http_upload_dispatch(int root,const pf_http_upload *q,char *body,size_t c
  }
  if(n<0||(size_t)n>=cap){body[0]=0;return 500;}
  return status;
+}
+
+int pf_http_ui_route(const unsigned char *raw,size_t n,unsigned port,const char *token,unsigned *asset){
+ if(!asset)return 500;
+ *asset=0;
+ if(!port||port>65535||!hex_token(token))return 500;
+ if(!raw||!n)return 400;
+ if(n>PF_HTTP_MAX_HEAD)return 431;
+ size_t line=eol(raw,n);
+ if(line==n||line>512)return 400;
+ if(line<4||memcmp(raw,"GET ",4))return 404;
+ size_t end=4;while(end<line&&raw[end]!=' ')end++;
+ if(end==line||(!eq(raw+end,line-end,LIT(" HTTP/1.1"))&&!eq(raw+end,line-end,LIT(" HTTP/1.0"))))return 400;
+ const unsigned char *p=raw+4;size_t len=end-4;unsigned route=0;
+ if(eq(p,len,LIT("/")))route=1;
+ else if(eq(p,len,LIT("/ui.css")))route=2;
+ else if(eq(p,len,LIT("/ui.js")))route=3;
+ else return 404;
+ for(size_t i=0;i<n;i++)if((raw[i]<32&&raw[i]!='\r'&&raw[i]!='\n')||raw[i]>=127)return 400;
+ int status=check_headers(raw,n,line,port,token,-1,NULL);
+ if(status!=200)return status;
+ *asset=route;return 200;
 }
