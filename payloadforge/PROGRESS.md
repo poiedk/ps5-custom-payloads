@@ -178,3 +178,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - 11 new tests cover metadata parsing, schema bounds, duplicates, malformed paths/constraints, graph validation and verifying exact archive+manifest+member bytes. Legacy mutation entry points still reject nonempty metadata.
 - PR #4 merged into development ONLY at 14c09b3. ELF artifact 14407717435, SHA-256 173ae36ff92ff9c21a132c4fd707419ce058c42e7ef9f66a448c2f5653ab30e1.
 - No PS5 write/execution. Next gate: atomically validate proposed whole managed state for install/update/rollback/uninstall, under store lock.
+
+### N10-C — managed store dependency and conflict enforcement
+- [Run 44260487683](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44260487683), commit 53d3545: all three jobs succeeded. Actual host log: `Ran 274 tests in 12.475s` / `OK`; native host smoke passed and SDK cross-compiled read-only ELF.
+- Nine new state-transition tests; verifies proposed final graph under root lock before install/update/rollback/uninstall. Blocks reverse dependency violations, cycles, declared path/port/version conflicts and corrupt peer manifests. Original hash-verified manifest is the canonical metadata source, including for restored snapshots; effective registry still records actual files and preserved config.
+- PR #5 merged into development ONLY at 99ed31b. ELF artifact 14407857895, SHA-256 082651e3fdb72844ced2fdcdbd6ffa2c1d8206c779b685d3bb39c133ae50b552.
+- Scope: managed, declared resources only; no probing unmanaged processes, no automatic dependency downloads or execution. Native runtime/hardware untested. Stored ZIP only; compression and recovery next.
