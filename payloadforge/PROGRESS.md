@@ -222,3 +222,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - 10 additional tests cover retry after an interrupted initial publication, preserved staged content, active generation protection, stale observations, corrupt active state, symlink refusal, and quarantine collisions.
 - PR #11 merged into development ONLY at 4a6eeaf. Read-only ELF artifact 14456915854, SHA-256 a98f2752eabe3b8592e6fe0acf26edfbe7494ed32dc486f299307e436a07fdf8.
 - Explicit quarantine of one named remnant only; existing lock, checked CURRENT marker/identity, integrity and private types. Move to separate recovery-quarantine hierarchy without deletion or overwrite; rerun the original verified action after inspection. Invalid CURRENT or corrupt state stays blocked for manual investigation; no automatic reconstruction or promotion. No hardware execution.
+
+### N13-A — authenticated native HTTP protocol and read-only dispatch
+- [Run 44366761800](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44366761800), commit 51eab27: all three jobs succeeded. Actual host log: `Ran 344 tests in 12.616s` / `OK`; SDK cross-build succeeded.
+- Ten new tests cover authenticated health/status/recovery, exact loopback Host, optional matching Origin, duplicate headers, framing, no bodies or mutations, strict package IDs, bounded replies and no store writes.
+- PR #12 merged into development ONLY at 80d2e4b. Read-only ELF artifact 14458050149, SHA-256 fc3345220870804f75fb1fbd994d0837e84d2501e3e2882cefe7f6a54bdc6e88.
+- Parser/dispatcher only. No listening socket, token generation or runtime entry point yet. No hardware execution.
