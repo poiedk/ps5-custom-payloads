@@ -5,7 +5,7 @@ FLAGS = -std=c11 -O2 -Wall -Wextra -Werror
 ZLIB_DIR ?= $(CURDIR)/build/zlib
 ZLIB_FILES = adler32.c crc32.c inflate.c inffast.c inftrees.c zutil.c
 ZLIB_SRC = $(addprefix $(ZLIB_DIR)/,$(ZLIB_FILES))
-.PHONY: host ps5 host-runtime ps5-runtime clean
+.PHONY: host ps5 host-runtime ps5-runtime host-managed ps5-managed clean
 host: build/payloadforge-preflight-host
 	./build/payloadforge-preflight-host
 build/payloadforge-preflight-host: core.c core.h sha256.c sha256.h zip.c zip.h manifest.c manifest.h store.c store.h version.c version.h constraints.c constraints.h inflate.c inflate.h tar.c tar.h http.c http.h transport.c transport.h preflight.c
@@ -32,3 +32,14 @@ build/payloadforge-runtime-read-only.elf: $(RUNTIME_SRC) $(RUNTIME_HDR)
 	test -f "$(ZLIB_DIR)/zlib.h"
 	mkdir -p build
 	"$(PS5_CC)" $(FLAGS) -DZ_SOLO -I"$(ZLIB_DIR)" $(RUNTIME_SRC) $(ZLIB_SRC) -o $@
+
+host-managed: build/payloadforge-runtime-managed-host
+ps5-managed: build/payloadforge-runtime-managed-development.elf
+build/payloadforge-runtime-managed-host: $(RUNTIME_SRC) $(RUNTIME_HDR)
+	mkdir -p build
+	$(HOST_CC) $(FLAGS) -DPF_ENABLE_MANAGED $(RUNTIME_SRC) -o $@ -lz
+build/payloadforge-runtime-managed-development.elf: $(RUNTIME_SRC) $(RUNTIME_HDR)
+	test -x "$(PS5_CC)"
+	test -f "$(ZLIB_DIR)/zlib.h"
+	mkdir -p build
+	"$(PS5_CC)" $(FLAGS) -DPF_ENABLE_MANAGED -DPF_PS5_BUILD -DZ_SOLO -I"$(ZLIB_DIR)" $(RUNTIME_SRC) $(ZLIB_SRC) -o $@
