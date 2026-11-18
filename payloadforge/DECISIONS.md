@@ -24,3 +24,7 @@
 - Native callers must serialize threads and quiesce the managed app. Version ordering is explicit, status verifies metadata only, and native ELF remains read-only pending runtime and integration gates.
 
 - N10: retain original checksum-bound manifest as authoritative dependency/conflict/resource metadata; effective file registry remains schema 1. Validate the full proposed managed graph while holding the existing root lock, before any activation/deactivation or snapshot mutation. Reject missing dependencies rather than downloading or executing anything. Limits: 256 installed packages, aggregate 4096 dependency/conflict entries and 1024 resource claims; no assertion about unmanaged processes or live reservations. Native state transitions still require serialized callers and a private root.
+
+### N11-B — bounded compressed ZIP and dependency retrieval
+- Preserve the stored-only borrowed-buffer interface; use a separate owned-buffer interface for method 8, with explicit disposal and cleanup on partial failure. Reject unsupported ZIP features instead of silently processing them. Verification/install paths remain bounded; the current in-memory design is not yet a hardware memory benchmark.
+- Retry transient zlib source retrieval at most three times, request identity encoding and disable caching. Never relax the pinned hash or size checks; log observed hash/size and fail closed if retrieval remains invalid.
