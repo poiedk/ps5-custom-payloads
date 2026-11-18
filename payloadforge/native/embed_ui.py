@@ -1,13 +1,15 @@
 """Generate fixed native UI assets from reviewed local source files."""
 from pathlib import Path
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from payloadforge.catalog_preview import encoded
 
-ASSETS = (("index.html", "pf_ui_html"), ("ui.css", "pf_ui_css"), ("ui.js", "pf_ui_js"))
+ASSETS = (("index.html", "pf_ui_html"), ("ui.css", "pf_ui_css"), ("ui.js", "pf_ui_js"), ("catalog", "pf_ui_catalog"))
 def build(out):
     src = Path(__file__).resolve().parent / "web"
     lines = ["/* Generated source; do not edit. */", "#ifndef PF_UI_ASSETS_H", "#define PF_UI_ASSETS_H"]
     for name, symbol in ASSETS:
-        data = (src / name).read_bytes()
+        data = encoded() if name == "catalog" else (src / name).read_bytes()
         if not 0 < len(data) < 65536 or b"\0" in data:
             raise ValueError("invalid embedded asset: " + name)
         lines.append("static const unsigned char " + symbol + "[] = {")
