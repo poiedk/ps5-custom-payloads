@@ -11,6 +11,7 @@ function refresh(){
  ["backup","rollback","uninstall"].forEach(function(id){$(id).disabled=!ready||busy||!$("control-confirm").checked;});
  $("quarantine").disabled=!ready||busy||!observed||!$("control-confirm").checked;
  $("connect").disabled=busy;$("disconnect").disabled=busy;
+ Array.prototype.forEach.call(document.querySelectorAll('input, select'),function(el){el.disabled=busy;});
 }
 function invalidate(){verified=null;$("verified").textContent="No verified package";$("package-confirm").checked=false;refresh();}
 function clearSession(){
@@ -35,7 +36,7 @@ async function request(path,method,body){
  var response=await fetch(path,options);
  var data=await response.json();
  if(response.status===401){clearSession();throw new Error("Session token rejected or expired.");}
- if(!response.ok){show(data);throw new Error("HTTP "+response.status+". Inspect state before retrying.");}
+ if(!response.ok){throw new Error("HTTP "+response.status+" "+JSON.stringify(data));}
  return data;
 }
 async function work(fn){
@@ -57,6 +58,7 @@ $("disconnect").addEventListener("click",clearSession);
 ["manifest-hash","archive-hash"].forEach(function(id){$(id).addEventListener("input",invalidate);});
 $("package-confirm").addEventListener("change",refresh);
 $("control-confirm").addEventListener("change",refresh);
+["snapshot","config","kind","object"].forEach(function(id){$(id).addEventListener("change",function(){$("control-confirm").checked=false;refresh();});});
 $("package-id").addEventListener("input",function(){observed=null;$("control-confirm").checked=false;refresh();});
 $("verify").addEventListener("click",function(){work(async function(){
  invalidate();var blob=envelope();var info=await request("/api/upload/verify","POST",blob);
@@ -90,6 +92,7 @@ $("recovery").addEventListener("click",function(){work(async function(){
  show(data);
 });});});
 $("clear-result").addEventListener("click",function(){show("");});
-window.addEventListener("pagehide",function(){token="";verified=null;observed=null;});
+window.addEventListener("pagehide",function(){token="";verified=null;observed=null;ready=false;});
+window.addEventListener("pageshow",function(event){if(event.persisted)clearSession();});
 refresh();
 })();
