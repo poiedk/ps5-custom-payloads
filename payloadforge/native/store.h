@@ -38,4 +38,16 @@ typedef struct {
  char current[65];
 } pf_recovery;
 int pf_recovery_inspect(int rootfd,const char *id,pf_recovery *report);
+/* Explicit, non-destructive retry preparation. The caller selects a single
+ * remnant and supplies the last inspected CURRENT marker and ID. An absent
+ * marker requires an empty expected_current. Never moves CURRENT or a live
+ * generation, never promotes inactive data, and never deletes a remnant.
+ * Quarantine is outside apps; no overwrite. 0 moved, -1 refused, -3 rename
+ * succeeded but durability uncertain. Inspect again before retrying.
+ */
+enum { PF_REC_STAGE_GENERATION=1, PF_REC_STAGE_BACKUP=2,
+ PF_REC_PENDING_ACTIVATION=3, PF_REC_PENDING_UNINSTALL=4,
+ PF_REC_INACTIVE_GENERATION=5 };
+int pf_recovery_quarantine(int rootfd,const char *id,unsigned expected_marker,
+ const char *expected_current,unsigned kind,const char *object_hash);
 #endif
