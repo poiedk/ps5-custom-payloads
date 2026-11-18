@@ -127,7 +127,31 @@
       "evidence": [
         "https://github.com/X-F1REBALL-X/HearBridge-PS5/releases"
       ]
+    },
+    {
+      "id": "zhithemes",
+      "repo": "itsRealZhi/ZhiThemes",
+      "kind": "standalone",
+      "asset_pattern": "^ZhiThemes\\.elf$",
+      "status": "hold",
+      "reason": "v0.1.0-alpha released 2026-11-12, upstream reports 13.60 support and release short commit 92255ff. ShellUI injection conflicts with other HENs and CheatRunner. Public source exists but full commit, owner/repo history, upstream digest and independent exact-asset SHA-256 and source review remain unverified.",
+      "evidence": [
+        "https://github.com/itsRealZhi/ZhiThemes/releases",
+        "https://github.com/itsRealZhi/ZhiThemes/blob/main/docs/INSTALL.md",
+        "https://store.brewology.com/ps5/zhithemes/",
+        "https://www.reddit.com/r/PS5_Jailbreak/comments/1xul26o/zhithemes_real_ui_themes_folders_and_more_qol/"
+      ]
+    },
+    {
+      "id": "archivefetch",
+      "kind": "standalone",
+      "asset_pattern": "^ArchiveFetch-1\\.0\\.1\\.elf$",
+      "status": "hold",
+      "reason": "Brewology reports 4beemaster release 2026-11-16, Archive.org download manager. Canonical repository, commit, lawful-use scope, firmware 13.60, upstream digest and independent exact-asset hash not verified.",
+      "evidence": [
+        "https://store.brewology.com/ps5/archivefetch/"
+      ]
     }
   ],
-  "checked_on": "2026-11-17"
+  "checked_on": "2026-11-18"
 }
