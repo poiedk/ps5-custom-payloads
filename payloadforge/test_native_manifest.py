@@ -19,7 +19,7 @@ class NativeManifestTests(unittest.TestCase):
     def setUpClass(cls):
         tmp=tempfile.TemporaryDirectory();cls.addClassCleanup(tmp.cleanup)
         base=pathlib.Path(__file__).resolve().parent/"native";out=pathlib.Path(tmp.name)/"manifest.so"
-        subprocess.run(["cc","-std=c11","-Wall","-Wextra","-Werror","-shared","-fPIC",*[str(base/x) for x in ("core.c","sha256.c","zip.c","manifest.c","version.c","constraints.c")],"-o",str(out)],check=True)
+        subprocess.run(["cc","-std=c11","-Wall","-Wextra","-Werror","-shared","-fPIC",*[str(base/x) for x in ("core.c","sha256.c","zip.c","manifest.c","version.c","constraints.c","inflate.c")],"-o",str(out),"-lz"],check=True)
         cls.lib=ctypes.CDLL(str(out))
         cls.lib.pf_manifest_parse.argtypes=[ctypes.c_void_p,ctypes.c_size_t,ctypes.POINTER(Manifest),ctypes.POINTER(File),ctypes.c_size_t]
         cls.lib.pf_manifest_parse.restype=ctypes.c_int
