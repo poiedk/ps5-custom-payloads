@@ -257,3 +257,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Seven host process tests cover explicit mode, PS5 root policy compiled on host, authentication before upload body, interrupted upload with no mutation, invalid hashes and full socket lifecycle (verify/install/backup/upgrade/rollback/uninstall).
 - PR #17 merged into development only at cf04b9c. Managed-development ELF artifact 14460717031, SHA-256 3a7e31decf0e42e0c2f72fe8487f9cbb5e95f2acd01a25c86227914de87c68b4. Read-only artifact remains separate.
 - Managed runtime PS5 target accepts only existing private /data/payloadforge-demo, loopback and explicit invocation. No real PS5 runtime, loader argument/output, browser, memory or hardware filesystem tests. No stock payload integration.
+
+### N14-A — embedded offline development Web UI
+- [Run 44376814840](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44376814840), commit 18d2625: all three jobs succeeded. Host log: `Ran 387 tests in 100.202s` / `OK`; JavaScript syntax check and three SDK ELF builds passed.
+- Four tests cover real host socket retrieval of exact embedded files, CSP and fixed routes, API authorization isolation, source security expectations. UI exposes verified package actions and managed controls, with explicit operator confirmation. No real browser test yet.
+- PR #18 merged into development only at 9125e5582c3b7f1f28bd76a31f144a05d95ae0da. Managed-development artifact 14460553966, SHA-256 75a71c8ace921911f90300df29b3deae2ebb65b2d413de0e7f495b2035a0f17d.
+- Remaining gates: actual browser end-to-end, launcher/console runtime, native catalog/PLDMGR compatibility; no real PS5 install or stable release.
