@@ -642,15 +642,12 @@ static int recovery_scan(int d,int mode,pf_recovery *report){
  }
  closedir(dir);return rc;
 }
-int pf_recovery_inspect(int root,const char *id,pf_recovery *report){
+static int inspect_locked(int root,const char *id,pf_recovery *report){
  if(!report)return -1;
  memset(report,0,sizeof(*report));
  if(!id||!pf_id_valid(id,strlen(id)))return -1;
- int rc=-1,lock=-1,apps=-1,app=-1,gens=-1,backups=-1,gen=-1,data=-1;
+ int rc=-1,apps=-1,app=-1,gens=-1,backups=-1,gen=-1,data=-1;
  pf_file *files=NULL;pf_manifest plan;
- lock=recovery_lock(root);
- if(lock==-2){return exists_at(root,"apps")==0?0:-1;}
- if(lock<0)goto done;
  int present=exists_at(root,"apps");if(present==0){rc=0;goto done;}if(present<0)goto done;
  apps=dir_at(root,"apps",0);if(apps<0)goto done;
  present=exists_at(apps,id);if(present==0){rc=0;goto done;}if(present<0)goto done;
@@ -691,6 +688,66 @@ int pf_recovery_inspect(int root,const char *id,pf_recovery *report){
  rc=0;
  done:free(files);if(data>=0)close(data);if(gen>=0)close(gen);if(backups>=0)close(backups);
  if(gens>=0)close(gens);
+ if(app>=0)close(app);
+ if(apps>=0)close(apps);
+ return rc;
+}
+
+int pf_recovery_inspect(int root,const char *id,pf_recovery *report){
+ if(!report)return -1;
+ memset(report,0,sizeof(*report));
+ if(!id||!pf_id_valid(id,strlen(id)))return -1;
+ int lock=recovery_lock(root);
+ if(lock==-2)return exists_at(root,"apps")==0?0:-1;
+ if(lock<0)return -1;
+ int rc=inspect_locked(root,id,report);close(lock);return rc;
+}
+/* Existing lock only: a failed recovery request must not create a store. */
+static int recovery_write_lock(int root){
+ struct stat st;
+ if(fstat(root,&st)||!S_ISDIR(st.st_mode)||st.st_uid!=geteuid()||(st.st_mode&0077))return -1;
+ int lock=openat(root,".lock",O_RDWR|O_NOFOLLOW|O_CLOEXEC|O_NONBLOCK);
+ if(lock<0)return -1;
+ if(fstat(lock,&st)||!S_ISREG(st.st_mode)||st.st_uid!=geteuid()||st.st_nlink!=1||(st.st_mode&0077)||lock_exclusive(lock)){close(lock);return -1;}
+ return lock;
+}
+int pf_recovery_quarantine(int root,const char *id,unsigned expected_marker,const char *expected_current,unsigned kind,const char *object_hash){
+ if(!id||!pf_id_valid(id,strlen(id))||!expected_current||expected_marker>3||
+    (expected_marker?!lower_hash(expected_current):*expected_current!=0)||!lower_hash(object_hash))return -1;
+ const char *parent=NULL,*prefix=NULL,*category=NULL;
+ int isdir=1;
+ switch(kind){
+ case PF_REC_STAGE_GENERATION:parent="generations";prefix=".stage-";category="staged-generations";break;
+ case PF_REC_STAGE_BACKUP:parent="backups";prefix=".stage-";category="staged-backups";break;
+ case PF_REC_PENDING_ACTIVATION:prefix=".pointer-";category="pending-activation";isdir=0;break;
+ case PF_REC_PENDING_UNINSTALL:prefix=".uninstall-";category="pending-uninstall";isdir=0;break;
+ case PF_REC_INACTIVE_GENERATION:parent="generations";prefix="";category="inactive-generations";break;
+ default:return -1;
+ }
+ char name[80];int len=snprintf(name,sizeof name,"%s%s",prefix,object_hash);
+ if(len<0||(size_t)len>=sizeof name)return -1;
+ int rc=-1,lock=-1,apps=-1,app=-1,source=-1,q=-1,qa=-1,qd=-1;
+ pf_recovery report;
+ lock=recovery_write_lock(root);if(lock<0)goto done;
+ if(inspect_locked(root,id,&report)||report.marker!=expected_marker||
+    strcmp(report.current,expected_current)||report.integrity!=(expected_marker?1u:0u)||
+    report.unexpected_entries)goto done;
+ if(kind==PF_REC_INACTIVE_GENERATION&&expected_marker==1&&!strcmp(expected_current,object_hash))goto done;
+ apps=dir_at(root,"apps",0);if(apps<0)goto done;
+ app=dir_at(apps,id,0);if(app<0)goto done;
+ source=parent?dir_at(app,parent,0):dup(app);
+ if(source<0||!safe_entry(source,name,isdir))goto done;
+ /* Preserve all bytes, including unregistered files, in a separate namespace. */
+ q=dir_at(root,"recovery-quarantine",1);if(q<0||fsync(root))goto done;
+ qa=dir_at(q,id,1);if(qa<0||fsync(q))goto done;
+ qd=dir_at(qa,category,1);if(qd<0||fsync(qa))goto done;
+ if(exists_at(qd,object_hash)!=0||renameat(source,name,qd,object_hash))goto done;
+ int source_sync=fsync(source),dest_sync=fsync(qd);
+ rc=source_sync||dest_sync?-3:0;
+ done:if(qd>=0)close(qd);
+ if(qa>=0)close(qa);
+ if(q>=0)close(q);
+ if(source>=0)close(source);
  if(app>=0)close(app);
  if(apps>=0)close(apps);
  if(lock>=0)close(lock);
