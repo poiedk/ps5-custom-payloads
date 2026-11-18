@@ -4,6 +4,7 @@
 #include "zip.h"
 #include "manifest.h"
 #include "constraints.h"
+#include "inflate.h"
 #include <stdio.h>
 #include <string.h>
 #define EXPECT(x) do { if (!(x)) { fprintf(stderr,"FAIL: %s\n",#x); return 1; } } while(0)
@@ -31,6 +32,12 @@ int main(void){
     };
     EXPECT(pf_state_validate(states,2)==0);
     EXPECT(pf_state_validate(states,1)==-2);
+    const unsigned char compressed[]={0xcb,0x48,0xcd,0xc9,0xc9,0x07,0x00};
+    unsigned char *expanded=NULL;
+    EXPECT(pf_inflate_exact(compressed,sizeof compressed,5,&expanded)==0);
+    int valid=expanded&&!memcmp(expanded,"hello",5);
+    pf_inflate_free(expanded);
+    EXPECT(valid);
     puts("PayloadForge native preflight: OK (read-only; not installer)");
     return 0;
 }

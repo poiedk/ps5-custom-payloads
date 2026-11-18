@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y zlib1g-dev
       - run: python3 -m pip install 'Pillow>=11,<13'
       - run: python3 -m unittest discover -s payloadforge -p 'test_*.py' -v
       - run: make -C payloadforge/native host
@@ -55,6 +56,7 @@ jobs:
           export PS5_PAYLOAD_SDK="$RUNNER_TEMP/sdk/ps5-payload-sdk"
           export LLVM_CONFIG="$(command -v llvm-config-18)"
           test -x "$LLVM_CONFIG"
+          python3 payloadforge/native/fetch_zlib.py payloadforge/native/build/zlib
           make -C payloadforge/native ps5
           cd payloadforge/native/build
           readelf -h payloadforge-preflight.elf
@@ -79,6 +81,10 @@ jobs:
             payloadforge/native/version.h
             payloadforge/native/constraints.c
             payloadforge/native/constraints.h
+            payloadforge/native/inflate.c
+            payloadforge/native/inflate.h
+            payloadforge/native/fetch_zlib.py
+            payloadforge/native/build/zlib/zlib-1.4.tar.gz
             payloadforge/native/preflight.c
             payloadforge/native/Makefile
             payloadforge/COPYING
