@@ -13,7 +13,7 @@ class NativeZipTests(unittest.TestCase):
     def setUpClass(cls):
         tmp=tempfile.TemporaryDirectory();cls.addClassCleanup(tmp.cleanup)
         base=pathlib.Path(__file__).resolve().parent/"native";out=pathlib.Path(tmp.name)/"zip.so"
-        subprocess.run(["cc","-std=c11","-Wall","-Wextra","-Werror","-shared","-fPIC",str(base/"core.c"),str(base/"zip.c"),"-o",str(out)],check=True)
+        subprocess.run(["cc","-std=c11","-Wall","-Wextra","-Werror","-shared","-fPIC",str(base/"core.c"),str(base/"zip.c"),str(base/"inflate.c"),"-o",str(out),"-lz"],check=True)
         cls.lib=ctypes.CDLL(str(out));cls.lib.pf_zip_scan.argtypes=[ctypes.c_void_p,ctypes.c_size_t,ctypes.POINTER(Entry),ctypes.c_size_t,ctypes.POINTER(ctypes.c_size_t)];cls.lib.pf_zip_scan.restype=ctypes.c_int
     def scan(self,raw,capacity=16):
         buf=ctypes.create_string_buffer(raw);out=(Entry*capacity)();count=ctypes.c_size_t(99)
