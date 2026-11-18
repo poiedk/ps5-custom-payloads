@@ -183,13 +183,13 @@ int pf_manifest_parse_metadata(const unsigned char *raw,size_t n,pf_manifest *ou
  if(rc)memset(meta,0,sizeof(*meta));
  return rc;
 }
-int pf_bundle_verify(const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh,pf_manifest *out,pf_file *files,size_t cap){
+static int verify_impl(const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh,pf_manifest *out,pf_file *files,size_t cap,pf_manifest_metadata *meta){
  if(!out)return -1;
  memset(out,0,sizeof(*out));
  if(!a||!m||!an||an>PF_ZIP_MAX_ARCHIVE||!mn||mn>PF_MANIFEST_LIMIT||!files||!cap||cap>PF_ZIP_MAX_MEMBERS)return -1;
  if(!pf_sha256_matches(a,an,ah)||!pf_sha256_matches(m,mn,mh))return -1;
  pf_manifest plan;
- if(pf_manifest_parse(m,mn,&plan,files,cap))return -1;
+ if(parse_impl(m,mn,&plan,files,cap,meta))return -1;
  pf_zip_entry *entries=calloc(plan.count,sizeof(*entries));
  if(!entries)return -1;
  size_t count=0;int status=-1;
@@ -201,4 +201,16 @@ int pf_bundle_verify(const unsigned char *a,size_t an,const char *ah,const unsig
  }
  *out=plan;status=0;
  end:free(entries);return status;
+}
+
+int pf_bundle_verify(const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh,pf_manifest *out,pf_file *files,size_t cap){
+ return verify_impl(a,an,ah,m,mn,mh,out,files,cap,NULL);
+}
+int pf_bundle_verify_metadata(const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh,pf_manifest *out,pf_file *files,size_t cap,pf_manifest_metadata *meta){
+ if(out)memset(out,0,sizeof(*out));
+ if(!meta)return -1;
+ memset(meta,0,sizeof(*meta));
+ int rc=verify_impl(a,an,ah,m,mn,mh,out,files,cap,meta);
+ if(rc)memset(meta,0,sizeof(*meta));
+ return rc;
 }
