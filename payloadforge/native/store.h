@@ -26,4 +26,16 @@ int pf_install_downgrade(int rootfd,const unsigned char *archive,size_t archive_
  const unsigned char *manifest,size_t manifest_n,const char *manifest_sha);
 /* Status: 1 active, 0 absent/uninstalled, -1 invalid state. */
 int pf_status(int rootfd,const char *id,char version[65],char generation[65]);
+/* Read-only recovery report. No generation is chosen or deleted. Marker:
+ * 0 absent, 1 active, 2 uninstalled/drop, 3 uninstalled/keep, 4 invalid.
+ * integrity: 0 not applicable, 1 verified managed bytes (mutable config
+ * may differ), 2 damaged/missing. Counts do not authenticate inactive data.
+ * Return -1 if inspection itself is unsafe or incomplete. */
+typedef struct {
+ unsigned marker,integrity;
+ size_t changed_configs,staged_generations,staged_backups,pending_markers,
+        inactive_generations,backups,unexpected_entries;
+ char current[65];
+} pf_recovery;
+int pf_recovery_inspect(int rootfd,const char *id,pf_recovery *report);
 #endif
