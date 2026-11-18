@@ -44,3 +44,5 @@
 - N13-C: separate read-only runtime artifact from non-listening preflight. Require explicit serve flags, existing absolute private root traversed without symlinks, OS entropy and at most 300-second session; no argv defaults, no automatic root creation and no remote/LAN listener. Local launcher output carries ephemeral token; actual PS5 argument/output support and same-device access are hardware gates. Store lock waits can exceed the nominal session deadline.
 
 - N13-D: keep control dispatch separate from read-only listener. Require matching Origin, session bearer, explicit confirmation header and zero-length POST. Only enumerated managed actions. No network write activation, arbitrary paths or payload execution.
+
+- N13-E: choose PFU1 fixed binary framing instead of multipart; HTTP upload capped at 12 MiB, manifest at 2 MiB, authenticate exact header before allocation/reading body. Caller-supplied hashes establish byte integrity only, not provenance. Verify endpoint checks package bytes, not final state/dependencies; apply rechecks using store. Existing archive expansion bounds are not a measured PS5 memory budget. No upload route in read-only runtime.
