@@ -3,6 +3,9 @@
 #define _DEFAULT_SOURCE 1
 #include "transport.h"
 #include "http.h"
+#ifdef PF_ENABLE_UI
+#include "ui_assets.h"
+#endif
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -87,6 +90,21 @@ static int response(int fd,int code,const char *body,int64_t deadline){
  if(n<0||(size_t)n>=sizeof head||sent(fd,head,(size_t)n,deadline)||sent(fd,body,strlen(body),deadline))return -1;
  return 1;
 }
+#ifdef PF_ENABLE_UI
+static int asset_response(int fd,unsigned asset,int64_t deadline){
+ const char *mime=NULL;const unsigned char *bytes=NULL;size_t length=0;
+ switch(asset){
+ case 1:mime="text/html; charset=utf-8";bytes=pf_ui_html;length=sizeof pf_ui_html-1;break;
+ case 2:mime="text/css; charset=utf-8";bytes=pf_ui_css;length=sizeof pf_ui_css-1;break;
+ case 3:mime="application/javascript; charset=utf-8";bytes=pf_ui_js;length=sizeof pf_ui_js-1;break;
+ default:return -1;
+ }
+ char head[1024];
+ int n=snprintf(head,sizeof head,"HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %zu\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nX-Frame-Options: DENY\r\nContent-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\r\n\r\n",mime,length);
+ if(n<0||(size_t)n>=sizeof head||sent(fd,head,(size_t)n,deadline)||sent(fd,(const char *)bytes,length,deadline))return -1;
+ return 1;
+}
+#endif
 static size_t complete(const unsigned char *p,size_t n,size_t start){
  for(size_t i=start;i+3<n;i++)if(!memcmp(p+i,"\r\n\r\n",4))return i+4;
  return 0;
@@ -165,6 +183,14 @@ static int serve(int listener,int root,const char *token,unsigned timeout_ms,int
   if(hn){
 #ifdef PF_ENABLE_MANAGED
    if(managed&&used>=5&&!memcmp(head,"POST ",5)){rc=managed_post(fd,root,head,used,hn,port,token,deadline);goto end;}
+#endif
+#ifdef PF_ENABLE_UI
+   if(managed){
+    unsigned asset=0;
+    code=pf_http_ui_route(head,used,port,token,&asset);
+    if(code==200){rc=asset_response(fd,asset,deadline);goto end;}
+    if(code!=404){rc=response(fd,code,"{\"error\":\"request rejected\"}",deadline);goto end;}
+   }
 #endif
    pf_http_request request;
    code=pf_http_parse(head,used,port,token,&request);
