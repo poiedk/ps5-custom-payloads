@@ -6,7 +6,7 @@ var token="",ready=false,busy=false,verified=null,observed=null;
 var hex=/^[a-f0-9]{64}$/,idPattern=/^[a-z0-9][a-z0-9-]{0,47}$/;
 function show(value){$("result").textContent=typeof value==="string"?value:JSON.stringify(value,null,2);}
 function refresh(){
- ["verify","status","recovery"].forEach(function(id){$(id).disabled=!ready||busy;});
+ ["verify","status","recovery","catalog"].forEach(function(id){$(id).disabled=!ready||busy;});
  ["install","upgrade","downgrade"].forEach(function(id){$(id).disabled=!ready||busy||!verified||!$("package-confirm").checked;});
  ["backup","rollback","uninstall"].forEach(function(id){$(id).disabled=!ready||busy||!$("control-confirm").checked;});
  $("quarantine").disabled=!ready||busy||!observed||!$("control-confirm").checked;
@@ -15,7 +15,7 @@ function refresh(){
 }
 function invalidate(){verified=null;$("verified").textContent="No verified package";$("package-confirm").checked=false;refresh();}
 function clearSession(){
- token="";ready=false;observed=null;$("token").value="";$("session").textContent="Not connected";
+ token="";ready=false;observed=null;$("catalog-rows").textContent="";$("catalog-meta").textContent="Connect to view the catalog.";$("token").value="";$("session").textContent="Not connected";
  $("control-confirm").checked=false;invalidate();refresh();
 }
 function packageId(){var id=$("package-id").value.trim();if(!idPattern.test(id))throw new Error("Enter a valid package ID.");return id;}
@@ -72,6 +72,12 @@ $("verify").addEventListener("click",function(){work(async function(){
  var packageBlob=verified.blob;invalidate();observed=null;var data=await request("/api/upload/"+action,"POST",packageBlob);
  show(data);
 });});});
+$("catalog").addEventListener("click",function(){work(async function(){
+ var data=await request("/api/catalog"),rows=$("catalog-rows");rows.textContent="";
+ if(!Array.isArray(data.items)||data.items.length>4096||data.installable!==false||data.live!==false)throw new Error("Invalid reference catalog.");
+ data.items.forEach(function(item){var tr=document.createElement("tr");[item.name,item.id,item.version].forEach(function(value){var td=document.createElement("td");td.textContent=value;tr.appendChild(td);});rows.appendChild(tr);});
+ $("catalog-meta").textContent="Snapshot "+data.snapshot_date+" | "+data.pldmgr_count+" reference entries | "+data.companion_count+" companion bundles | source: "+data.source_url+" | Git blob: "+data.source_git_blob;
+});});
 $("status").addEventListener("click",function(){work(async function(){show(await request("/api/status?id="+packageId()));});});
 $("recovery").addEventListener("click",function(){work(async function(){
  var id=packageId();observed=null;var data=await request("/api/recovery?id="+id);
