@@ -167,3 +167,8 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - CI lookup did not return a run for 5352243 at the time of this entry. No N10 PASS claimed. Last verified complete run remains 44182253046 (242 tests).
 - Manifest parsing and store operations still reject nonempty constraints; integration and persistence of dependency/resource metadata are the next gate, after validating this module.
 - No changes to production or PS5.
+
+### N10-A — validator verification
+- [Run 44245013206](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44245013206), commit 72f8332: all three jobs succeeded. Actual host log: `Ran 254 tests in 10.767s` / `OK`; `PayloadForge native preflight: OK (read-only; not installer)`.
+- 12 native graph tests (including three additional bound/chain tests), native smoke assertions and SDK cross-compile verified. Read-only ELF SHA-256 72ae3a0c88d4675c1dad5cfe91408c8b33f0ec9282dae9f0f55bb772494cf6f7, artifact 14400553778.
+- PR #3 merged into development ONLY at c5e7b93 after all three jobs passed. No merge to main. Manifest and store integration remains a separate gate.
