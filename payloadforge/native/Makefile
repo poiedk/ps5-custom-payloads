@@ -35,7 +35,8 @@ build/payloadforge-runtime-read-only.elf: $(RUNTIME_SRC) $(RUNTIME_HDR)
 	"$(PS5_CC)" $(FLAGS) -DZ_SOLO -I"$(ZLIB_DIR)" $(RUNTIME_SRC) $(ZLIB_SRC) -o $@
 
 UI_ASSETS = web/index.html web/ui.css web/ui.js
-build/ui_assets.h: embed_ui.py $(UI_ASSETS)
+CATALOG_INPUTS = ../catalog_preview.py ../catalog.py ../catalog_guard.py ../catalog_inputs/pldmgr_snapshot.json ../catalog_inputs/companion_snapshot.json
+build/ui_assets.h: embed_ui.py $(UI_ASSETS) $(CATALOG_INPUTS)
 	$(PYTHON) embed_ui.py $@
 
 host-managed: build/payloadforge-runtime-managed-host
