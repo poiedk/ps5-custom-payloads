@@ -42,3 +42,5 @@
 - N13-B: use explicit sequential IPv4 loopback TCP, fixed bounded parser and network I/O deadline, fail closed on unsupported SIGPIPE suppression. Keep native preflight read-only and non-listening. Source retrieval fallback accepts only exact pinned zlib source bytes from a previous successful CI artifact; no old binary reused. Artifact expiry remains a build reproducibility risk.
 
 - N13-C: separate read-only runtime artifact from non-listening preflight. Require explicit serve flags, existing absolute private root traversed without symlinks, OS entropy and at most 300-second session; no argv defaults, no automatic root creation and no remote/LAN listener. Local launcher output carries ephemeral token; actual PS5 argument/output support and same-device access are hardware gates. Store lock waits can exceed the nominal session deadline.
+
+- N13-D: keep control dispatch separate from read-only listener. Require matching Origin, session bearer, explicit confirmation header and zero-length POST. Only enumerated managed actions. No network write activation, arbitrary paths or payload execution.
