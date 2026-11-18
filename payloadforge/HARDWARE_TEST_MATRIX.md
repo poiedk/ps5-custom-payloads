@@ -14,7 +14,7 @@ All entries begin as NOT_RUN. Use only a CI-verified candidate and the bundled h
 | H08 | Inspect recovery before and after actions; optionally inspect a known synthetic interrupted remnant created by an approved test harness. | No unexpected entries and no automatic cleanup. No physical power interruption; if no harness, interruption test BLOCKED. |
 | H09 | Uninstall keep, inspect snapshot and reinstall. Test drop only in fresh synthetic store with verified backup. | Retained settings for keep, registered files only, backup retained. |
 | H10 | Exercise negative dependency/conflict cases using approved synthetic fixtures; if no suitable fixture exists, record BLOCKED. | Current generation unchanged, explicit refusal. |
-| H11 | Confirm existing PLDMGR repository URL, IDs, favorites and settings unaffected. | Before/after comparison; no autoload change. |
+| H11 | Use the optional local version check, then confirm existing PLDMGR repository URL, IDs, favorites and settings unaffected. | Before/after comparison; no autoload change. |
 | H12 | Record runtime memory/latency, file picker usability, normal shutdown and any errors. | Actual hardware observations; no extrapolation from Linux. |
 | H13 | Stop runtime and preserve test evidence. | No continuing listener or unexpected state. |
 
