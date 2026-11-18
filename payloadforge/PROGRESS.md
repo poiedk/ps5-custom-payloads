@@ -241,3 +241,8 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Six host process tests cover explicit arguments, existing private directory, symlink refusal, fresh entropy token and authenticated socket session with expiry. No default listener or filesystem writes.
 - PR #14 merged into development ONLY at 87d1189. Read-only runtime development artifact 14459351447, ELF SHA-256 dbf09ec2183810febaec50c2d8c2dc5b546409155ce9961e528e205d534e70a8. Preflight artifact 14459456295, unchanged ELF SHA-256 ec843bfc688e035c4805e4f76b5f77790e824657a6b57b607a6a3f61c41227d9.
 - Loopback only. Requires explicit argv, secure entropy and local launcher output; no PS5 launcher, browser or hardware verification. Store lock wait may delay session exit. Runtime is not an installer or release candidate.
+
+### N13-D — confirmed managed control protocol
+- [Run 44372464719](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44372464719), c14ee9a: all three jobs succeeded. Actual host log: `Ran 366 tests in 17.871s` / `OK`. Both ELF builds cross-compiled.
+- Eight tests for POST authentication and confirmation, strict arguments, backup/rollback/uninstall/quarantine and isolation from read-only dispatch. PR #15 merged into development only at 9d658c2ca6df8da89a5d9b046f239f0acf9cc3d7.
+- Runtime artifact 14460610499, SHA-256 3be8d66743b00d7223ec4eee4799c28060585c7410da4a3456aa79ca9cde8958. Mutation API still not wired to sockets. No hardware test.
