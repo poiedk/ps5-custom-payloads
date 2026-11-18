@@ -85,6 +85,8 @@ jobs:
             payloadforge/native/inflate.h
             payloadforge/native/tar.c
             payloadforge/native/tar.h
+            payloadforge/native/http.c
+            payloadforge/native/http.h
             payloadforge/native/fetch_zlib.py
             payloadforge/native/build/zlib/zlib-1.4.tar.gz
             payloadforge/native/preflight.c

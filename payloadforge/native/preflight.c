@@ -5,6 +5,7 @@
 #include "manifest.h"
 #include "constraints.h"
 #include "inflate.h"
+#include "http.h"
 #include <stdio.h>
 #include <string.h>
 #define EXPECT(x) do { if (!(x)) { fprintf(stderr,"FAIL: %s\n",#x); return 1; } } while(0)
@@ -44,6 +45,11 @@ int main(void){
     valid=expanded&&expanded_n==5&&!memcmp(expanded,"hello",5);
     pf_inflate_free(expanded);
     EXPECT(valid);
+    const char token[]="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    const char request[]="GET /api/health HTTP/1.1\r\nHost: 127.0.0.1:8765\r\nAuthorization: Bearer 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\r\n\r\n";
+    pf_http_request parsed;
+    EXPECT(pf_http_parse((const unsigned char *)request,sizeof request-1,8765,token,&parsed)==200);
+    EXPECT(parsed.route==PF_HTTP_HEALTH);
     puts("PayloadForge native preflight: OK (read-only; not installer)");
     return 0;
 }
