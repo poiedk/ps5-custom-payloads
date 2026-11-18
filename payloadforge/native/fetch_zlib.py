@@ -15,13 +15,27 @@ FILES={"adler32.c","crc32.c","crc32.h","inflate.c","inflate.h","inffast.c","inff
 def fetch(destination):
     dest=Path(destination)
     dest.mkdir(parents=True,exist_ok=False)
-    req=urllib.request.Request(URL,headers={"User-Agent":"PayloadForge-build"})
-    with urllib.request.urlopen(req,timeout=60) as response:
-        if not response.geturl().startswith("https://"):
-            raise ValueError("HTTPS required")
-        raw=response.read(LIMIT+1)
-    if len(raw)>LIMIT or hashlib.sha256(raw).hexdigest()!=SHA256:
-        raise ValueError("zlib source checksum or size mismatch")
+    # Only the identical pinned archive is acceptable; do not learn a new hash on retry.
+    raw=None
+    import time
+    for attempt in range(3):
+        try:
+            req=urllib.request.Request(URL,headers={"User-Agent":"PayloadForge-build","Accept-Encoding":"identity","Cache-Control":"no-cache"})
+            with urllib.request.urlopen(req,timeout=60) as response:
+                if not response.geturl().startswith("https://"):
+                    raise ValueError("HTTPS required")
+                candidate=response.read(LIMIT+1)
+            actual=hashlib.sha256(candidate).hexdigest()
+            if len(candidate)>LIMIT or actual!=SHA256:
+                raise ValueError("zlib source checksum or size mismatch: received "+str(len(candidate))+" bytes, sha256 "+actual)
+            raw=candidate
+            break
+        except (OSError,ValueError) as exc:
+            print("Pinned zlib fetch attempt "+str(attempt+1)+": "+str(exc),flush=True)
+            if attempt<2:
+                time.sleep(2**attempt)
+    if raw is None:
+        raise ValueError("Pinned zlib source unavailable; refusing native build")
     found=set()
     with tarfile.open(fileobj=io.BytesIO(raw),mode="r:gz") as archive:
         for m in archive:
