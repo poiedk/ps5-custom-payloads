@@ -18,4 +18,7 @@ int pf_manifest_parse_metadata(const unsigned char *raw,size_t n,pf_manifest *ou
 int pf_manifest_parse(const unsigned char *raw,size_t n,pf_manifest *out,pf_file *files,size_t capacity);
 int pf_bundle_verify(const unsigned char *archive,size_t archive_n,const char *archive_hash,
  const unsigned char *manifest,size_t manifest_n,const char *manifest_hash,pf_manifest *out,pf_file *files,size_t capacity);
+/* Read-only bundle verification including declared metadata; not a state gate. */
+int pf_bundle_verify_metadata(const unsigned char *archive,size_t archive_n,const char *archive_hash,
+ const unsigned char *manifest,size_t manifest_n,const char *manifest_hash,pf_manifest *out,pf_file *files,size_t capacity,pf_manifest_metadata *meta);
 #endif
