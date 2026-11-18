@@ -185,6 +185,11 @@ jobs:
             payloadforge/native/tar.h
             payloadforge/native/fetch_zlib.py
             payloadforge/native/build/zlib/zlib-1.4.tar.gz
+            payloadforge/catalog_preview.py
+            payloadforge/catalog.py
+            payloadforge/catalog_guard.py
+            payloadforge/catalog_inputs/pldmgr_snapshot.json
+            payloadforge/catalog_inputs/companion_snapshot.json
             payloadforge/native/embed_ui.py
             payloadforge/native/web/index.html
             payloadforge/native/web/ui.css
