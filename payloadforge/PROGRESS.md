@@ -210,3 +210,9 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - 11 new tests cover absent state without writes, active file integrity, mutable configuration changes, damaged/missing data, malformed marker, interrupted staging/pending marker, symlink and lock rejection, and retained snapshot verification.
 - PR #9 merged into development ONLY at 2e0eee5. Read-only ELF artifact 14421985940, SHA-256 818ba6cc7101168716ca1fd6bef7b765e1ef98d5a26d317b18f57903da736f6a.
 - Reports inactive generations/backups as counts, not authenticated restore candidates. No automatic repair or removal. Next: process-interruption fault tests, then explicit recovery policy. No physical PS5 power-loss test.
+
+### N12-B — isolated process interruption tests
+- [Run 44291987774](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44291987774), commit b7874ea: all three jobs succeeded. Actual host log: `Ran 324 tests in 13.227s` / `OK`; native preflight host smoke and SDK cross-build passed.
+- Ten Linux-only process-exit tests wrap renameat in the test library, terminate the child process before/after staging publication or active marker rename, and inspect the persisted managed state for installation, update, rollback and uninstall. No fault hooks in the production build.
+- PR #10 merged into development ONLY at 340282f. Read-only ELF artifact 14421503531, SHA-256 818ba6cc7101168716ca1fd6bef7b765e1ef98d5a26d317b18f57903da736f6a.
+- Process termination is not a simulated storage power loss and does not establish PS5 durability. Inactive/staged generations and pending markers remain retained; explicit recovery/retry policy and native daemon are still pending.
