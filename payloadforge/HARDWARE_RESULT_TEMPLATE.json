@@ -1,0 +1,77 @@
+{
+  "candidate": "0.2.0-rc0-demo",
+  "commit": "",
+  "ci_run": "",
+  "elf_sha256": "",
+  "ps5_model": "",
+  "firmware": "",
+  "pldmgr_version": "",
+  "tests": [
+    {
+      "id": "H01",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H02",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H03",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H04",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H05",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H06",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H07",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H08",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H09",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H10",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H11",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H12",
+      "status": "NOT_RUN",
+      "evidence": ""
+    },
+    {
+      "id": "H13",
+      "status": "NOT_RUN",
+      "evidence": ""
+    }
+  ],
+  "notes": ""
+}
