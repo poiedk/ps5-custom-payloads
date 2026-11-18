@@ -38,7 +38,7 @@ static int wait_fd(int fd,short event,int64_t deadline){
  }
 }
 static int local_addr(const struct sockaddr_in *a,socklen_t n){
- return n>=sizeof(*a)&&a->sin_family==AF_INET&&a->sin_addr.s_addr==htonl(INADDR_LOOPBACK);
+ return n>=sizeof(*a)&&a->sin_family==AF_INET&&a->sin_addr.s_addr==htonl(UINT32_C(0x7f000001));
 }
 static int listener_port(int fd,unsigned *out){
  struct sockaddr_in actual={0};socklen_t len=sizeof actual;
@@ -53,7 +53,7 @@ int pf_http_listen(unsigned port,unsigned *bound_port){
  #ifdef __FreeBSD__
  address.sin_len=sizeof address;
 #endif
- address.sin_port=htons((uint16_t)port);address.sin_addr.s_addr=htonl(INADDR_LOOPBACK);
+ address.sin_port=htons((uint16_t)port);address.sin_addr.s_addr=htonl(UINT32_C(0x7f000001));
  if(nonblock(fd)||bind(fd,(struct sockaddr *)&address,sizeof address)||listen(fd,4)||listener_port(fd,bound_port)){
   close(fd);*bound_port=0;return -1;
  }
