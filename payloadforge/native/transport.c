@@ -91,6 +91,109 @@ static int response(int fd,int code,const char *body,int64_t deadline){
  return 1;
 }
 #ifdef PF_ENABLE_UI
+/* Fixed-purpose local read-only probe of the documented PLDMGR /version.
+ * No arbitrary URL, forwarding of credentials, redirects or mutations.
+ * An answer identifies an HTTP response, not a cryptographic peer identity. */
+#if defined(PF_TEST_PLDMGR_PORT) && defined(PF_PS5_BUILD)
+#error test-only port override is forbidden in PS5 builds
+#endif
+#ifndef PF_TEST_PLDMGR_PORT
+#define PF_TEST_PLDMGR_PORT 8084
+#endif
+static int probe_ieq(const unsigned char *p,size_t n,const char *s){
+ if(n!=strlen(s))return 0;
+ for(size_t i=0;i<n;i++){unsigned char ch=p[i];if(ch>='A'&&ch<='Z')ch=(unsigned char)(ch+32);if(ch!=(unsigned char)s[i])return 0;}
+ return 1;
+}
+static size_t probe_eol(const unsigned char *p,size_t n){
+ for(size_t i=0;i+1<n;i++)if(p[i]=='\r'&&p[i+1]=='\n')return i;
+ return n;
+}
+/* 0 incomplete, -1 refused, 1 syntactically valid three-part version. */
+static int probe_parse(const unsigned char *raw,size_t n,char version[32]){
+ size_t end=0;
+ for(size_t i=0;i+3<n;i++)if(!memcmp(raw+i,"\r\n\r\n",4)){end=i+4;break;}
+ if(!end)return n>=4096?-1:0;
+ size_t line=probe_eol(raw,end);
+ if(line!=15||(memcmp(raw,"HTTP/1.1 200 OK",15)&&memcmp(raw,"HTTP/1.0 200 OK",15)))return -1;
+ size_t pos=line+2,body_n=0;unsigned seen=0;
+ while(pos+2<end){
+  line=probe_eol(raw+pos,end-pos);
+  if(!line||line==end-pos||line>1024)return -1;
+  const unsigned char *p=raw+pos;
+  size_t colon=0;while(colon<line&&p[colon]!=':')colon++;
+  if(!colon||colon==line)return -1;
+  for(size_t i=0;i<line;i++)if(p[i]<32||p[i]>=127)return -1;
+  for(size_t i=0;i<colon;i++)if(!((p[i]>='A'&&p[i]<='Z')||(p[i]>='a'&&p[i]<='z')||(p[i]>='0'&&p[i]<='9')||p[i]=='-'))return -1;
+  size_t a=colon+1,b=line;while(a<b&&p[a]==' ')a++;while(b>a&&p[b-1]==' ')b--;
+  unsigned bit=0;
+  if(probe_ieq(p,colon,"content-length")){
+   bit=1;if(a==b||b-a>2)return -1;
+   for(size_t i=a;i<b;i++){if(p[i]<'0'||p[i]>'9')return -1;body_n=body_n*10+(size_t)(p[i]-'0');}
+   if(!body_n||body_n>=32)return -1;
+  }else if(probe_ieq(p,colon,"content-type")){
+   bit=2;if(!probe_ieq(p+a,b-a,"text/plain")&&!probe_ieq(p+a,b-a,"text/plain; charset=utf-8"))return -1;
+  }else if(probe_ieq(p,colon,"transfer-encoding")||probe_ieq(p,colon,"content-encoding"))return -1;
+  if(bit&&(seen&bit))return -1;
+  seen|=bit;pos+=line+2;
+ }
+ if(pos+2!=end||seen!=3)return -1;
+ if(n-end<body_n)return 0;
+ if(n-end!=body_n)return -1;
+ unsigned dots=0,digits=0;
+ for(size_t i=0;i<body_n;i++){
+  unsigned ch=raw[end+i];
+  if(ch=='.'){if(!digits||++dots>2)return -1;digits=0;}
+  else if(ch<'0'||ch>'9'||++digits>5)return -1;
+ }
+ if(dots!=2||!digits)return -1;
+ memcpy(version,raw+end,body_n);version[body_n]=0;return 1;
+}
+static int probe_version(char version[32],int64_t deadline){
+ int64_t now=millis();if(now<0||now>=deadline)return 0;
+ if(deadline-now>1200)deadline=now+1200;
+ int fd=socket(AF_INET,SOCK_STREAM,0);if(fd<0)return 0;int ok=0;
+ struct sockaddr_in remote={0};remote.sin_family=AF_INET;
+#ifdef __FreeBSD__
+ remote.sin_len=sizeof remote;
+#endif
+ remote.sin_addr.s_addr=htonl(UINT32_C(0x7f000001));remote.sin_port=htons(PF_TEST_PLDMGR_PORT);
+ if(nonblock(fd))goto done;
+#ifndef MSG_NOSIGNAL
+#ifdef SO_NOSIGPIPE
+ int one=1;if(setsockopt(fd,SOL_SOCKET,SO_NOSIGPIPE,&one,sizeof one))goto done;
+#else
+ goto done;
+#endif
+#endif
+ int rc=connect(fd,(struct sockaddr *)&remote,sizeof remote);
+ if(rc<0){
+  if(errno!=EINPROGRESS&&errno!=EWOULDBLOCK)goto done;
+  if(wait_fd(fd,POLLOUT,deadline)!=1)goto done;
+  int error=0;socklen_t len=sizeof error;
+  if(getsockopt(fd,SOL_SOCKET,SO_ERROR,&error,&len)||error)goto done;
+ }
+ char request[160];
+ int count=snprintf(request,sizeof request,"GET /version HTTP/1.1\r\nHost: 127.0.0.1:%u\r\nConnection: close\r\nAccept: text/plain\r\n\r\n",(unsigned)PF_TEST_PLDMGR_PORT);
+ if(count<=0||(size_t)count>=sizeof request||sent(fd,request,(size_t)count,deadline))goto done;
+ unsigned char bytes[4096];size_t used=0;
+ while(used<sizeof bytes){
+  if(wait_fd(fd,POLLIN,deadline)!=1)break;
+  ssize_t got=recv(fd,bytes+used,sizeof bytes-used,0);
+  if(got<0&&(errno==EINTR||errno==EAGAIN||errno==EWOULDBLOCK))continue;
+  if(got<=0)break;
+  used+=(size_t)got;int parsed=probe_parse(bytes,used,version);
+  if(parsed){ok=parsed==1;break;}
+ }
+ done:close(fd);return ok;
+}
+static int probe_response(int fd,int64_t deadline){
+ char version[32]={0},body[256];
+ int reachable=probe_version(version,deadline);
+ int n=snprintf(body,sizeof body,"{\"reachable\":%s,\"reported_version\":\"%s\",\"identity_verified\":false,\"read_only\":true}",reachable?"true":"false",reachable?version:"");
+ int64_t now=millis();if(n<0||(size_t)n>=sizeof body||now<0)return -1;
+ return response(fd,200,body,now+1000);
+}
 static int asset_response(int fd,unsigned asset,int64_t deadline){
  const char *mime=NULL;const unsigned char *bytes=NULL;size_t length=0;
  switch(asset){
@@ -189,7 +292,7 @@ static int serve(int listener,int root,const char *token,unsigned timeout_ms,int
    if(managed){
     unsigned asset=0;
     code=pf_http_ui_route(head,used,port,token,&asset);
-    if(code==200){rc=asset_response(fd,asset,deadline);goto end;}
+    if(code==200){rc=asset==5?probe_response(fd,deadline):asset_response(fd,asset,deadline);goto end;}
     if(code!=404){rc=response(fd,code,"{\"error\":\"request rejected\"}",deadline);goto end;}
    }
 #endif
