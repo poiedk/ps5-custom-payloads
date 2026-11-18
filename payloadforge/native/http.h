@@ -45,4 +45,6 @@ int pf_http_upload_parse(const unsigned char *raw,size_t n,unsigned port,const c
 /* Internal trusted caller, serialized/quiesced store. Verify is read-only
  * and NOT a dependency/state plan; apply revalidates in the store engine. */
 int pf_http_upload_dispatch(int rootfd,const pf_http_upload *req,char *body,size_t cap);
+/* Fixed public UI assets only. No token/state or filesystem access. */
+int pf_http_ui_route(const unsigned char *raw,size_t n,unsigned port,const char *token,unsigned *asset);
 #endif
