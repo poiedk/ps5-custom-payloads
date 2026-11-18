@@ -2,7 +2,7 @@
 #include "manifest.h"
 #include "core.h"
 #include "sha256.h"
-#include "zip.h"
+#include "tar.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -193,15 +193,15 @@ static int verify_impl(const unsigned char *a,size_t an,const char *ah,const uns
  pf_zip_entry *entries=calloc(plan.count,sizeof(*entries));
  unsigned char **owned=calloc(plan.count,sizeof(*owned));
  if(!entries||!owned){free(entries);free(owned);return -1;}
- size_t count=0;int status=-1;
- if(pf_zip_scan_owned(a,an,entries,owned,plan.count,&count)||count!=plan.count)goto end;
+ size_t count=0;int status=-1;unsigned char *expanded=NULL;
+ if(pf_archive_scan(a,an,entries,owned,&expanded,plan.count,&count)||count!=plan.count)goto end;
  for(size_t i=0;i<count;i++){
   pf_zip_entry *e=entries+i;pf_file *match=NULL;
   for(size_t j=0;j<plan.count;j++)if(strlen(files[j].path)==e->name_len&&!memcmp(files[j].path,e->name,e->name_len)){match=files+j;break;}
   if(!match||e->size!=match->size||!pf_sha256_matches(e->data,e->size,match->sha256))goto end;
  }
  *out=plan;status=0;
- end:pf_zip_release(owned,plan.count);free(owned);free(entries);return status;
+ end:pf_archive_release(owned,&expanded,plan.count);free(owned);free(entries);return status;
 }
 
 int pf_bundle_verify(const unsigned char *a,size_t an,const char *ah,const unsigned char *m,size_t mn,const char *mh,pf_manifest *out,pf_file *files,size_t cap){
