@@ -7,13 +7,6 @@
     "prerelease": false
   },
   {
-    "id": "shadowkraken",
-    "repo": "MNeroba/ShadowKraken",
-    "name": "ShadowKraken",
-    "pattern": "shadowkraken\\.elf",
-    "prerelease": true
-  },
-  {
     "id": "alembic",
     "repo": "fthdgn-gh/Alembic",
     "name": "Alembic Engine",

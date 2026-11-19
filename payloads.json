@@ -14,20 +14,6 @@
     "icon_key": "d74089e0337bb63ace1bb1885260ce2a01ba5479e84b7c678e8c80ce5ddb2baf"
   },
   {
-    "id": "shadowkraken",
-    "name": "ShadowKraken",
-    "filename": "shadowkraken.elf",
-    "url": "https://github.com/MNeroba/ShadowKraken/releases/download/1.00-Dev.3-Fix.2/ShadowKraken.elf",
-    "source_direct": "https://github.com/MNeroba/ShadowKraken/releases/download/1.00-Dev.3-Fix.2/ShadowKraken.elf",
-    "version": "1.00-Dev.3-Fix.2",
-    "last_update": "2026-11-16",
-    "category": "Utilities & Tools",
-    "checksum": "df22150e375768152b3f6284ddccee508f2efc02f5c4d9fe86830b86f583660e",
-    "source": "https://github.com/MNeroba/ShadowKraken/releases",
-    "description": "Verify firmware compatibility before use.",
-    "icon_key": "a0af97f1f744a021dac88cf097fc9ffe53b2157e65cb4c77c5e8ab7a0fa3cce1"
-  },
-  {
     "id": "alembic",
     "name": "Alembic Engine",
     "filename": "alembic.elf",
