@@ -1,6 +1,5 @@
 {
   "warnings": [
-    "shadowkraken: HTTP Error 404: Not Found",
     "omnipad: no matching release asset",
     "lz4-compression: no matching release asset"
   ],
@@ -8,10 +7,6 @@
     "kraken-mount": {
       "type": "upstream",
       "url": "https://raw.githubusercontent.com/quer3q/kraken-mount/main/docs/logo.png"
-    },
-    "shadowkraken": {
-      "type": "custom",
-      "reason": "HTTP Error 404: Not Found"
     },
     "alembic": {
       "type": "upstream",
