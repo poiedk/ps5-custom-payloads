@@ -76,14 +76,20 @@ def bounded_png(im):
                 return data
     raise ValueError('icon cannot fit PLDMGR limit')
 
-def build_icons(results,sources):
-    icons={}; report={}
+def build_icons(results,sources,previous_icons=None,previous_entries=None):
+    icons=dict(previous_icons or {}); report={}
+    previous_entries=previous_entries or {}
     for entry in results:
         s=sources[entry['id']]
         try:
             im,source=official(s)
             report[s['id']]={'type':'upstream','url':source}
         except Exception as e:
+            old_key=previous_entries.get(entry['id'],{}).get('icon_key')
+            if old_key in icons:
+                entry['icon_key']=old_key
+                report[s['id']]={'type':'cached','reason':str(e)}
+                continue
             im=custom(s)
             report[s['id']]={'type':'custom','reason':str(e)}
         data=bounded_png(im)
