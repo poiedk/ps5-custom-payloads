@@ -303,9 +303,11 @@ int pf_http_ui_route(const unsigned char *raw,size_t n,unsigned port,const char 
  if(eq(p,len,LIT("/")))route=1;
  else if(eq(p,len,LIT("/ui.css")))route=2;
  else if(eq(p,len,LIT("/ui.js")))route=3;
+ else if(eq(p,len,LIT("/api/catalog")))route=4;
+ else if(eq(p,len,LIT("/api/pldmgr/version")))route=5;
  else return 404;
  for(size_t i=0;i<n;i++)if((raw[i]<32&&raw[i]!='\r'&&raw[i]!='\n')||raw[i]>=127)return 400;
- int status=check_headers(raw,n,line,port,token,-1,NULL);
+ int status=check_headers(raw,n,line,port,token,route>=4?0:-1,NULL);
  if(status!=200)return status;
  *asset=route;return 200;
 }

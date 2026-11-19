@@ -58,6 +58,13 @@ class NativeUITests(unittest.TestCase):
         self.assertEqual(self.exchange(port,"/ui.js",(host,"Content-Length: 0"),"POST")[0],401)
         self.assertEqual(self.exchange(port,"/ui.js",(host,"Authorization: Bearer "+token,f"Origin: http://127.0.0.1:{port}","X-PayloadForge-Confirm: yes","Content-Length: 0"),"POST")[0],404)
         self.assertEqual(list(self.root.iterdir()),[])
+    def test_catalog_reference_authenticated(self):
+        from payloadforge.catalog_preview import reference
+        port,token=self.start();host=f"Host: 127.0.0.1:{port}"
+        self.assertEqual(self.exchange(port,"/api/catalog",(host,))[0],401)
+        status,_,body=self.exchange(port,"/api/catalog",(host,"Authorization: Bearer "+token))
+        self.assertEqual(status,200);self.assertEqual(json.loads(body),reference())
+        self.assertEqual(list(self.root.iterdir()),[])
     def test_ui_source_policy(self):
         html=(self.src/"web/index.html").read_text()
         js=(self.src/"web/ui.js").read_text()

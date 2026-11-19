@@ -10,7 +10,7 @@ permissions:
   actions: read
 jobs:
   archive-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y zlib1g-dev
@@ -18,6 +18,9 @@ jobs:
       - run: python3 -m unittest discover -s payloadforge -p 'test_*.py' -v
       - run: make -C payloadforge/native host
       - run: node --check payloadforge/native/web/ui.js
+      - run: python3 -m pip install 'playwright==1.56.0'
+      - run: python3 -m playwright install --with-deps chromium
+      - run: python3 -m payloadforge.browser_check
   native-preflight:
     runs-on: ubuntu-24.04
     steps:
@@ -182,6 +185,11 @@ jobs:
             payloadforge/native/tar.h
             payloadforge/native/fetch_zlib.py
             payloadforge/native/build/zlib/zlib-1.4.tar.gz
+            payloadforge/catalog_preview.py
+            payloadforge/catalog.py
+            payloadforge/catalog_guard.py
+            payloadforge/catalog_inputs/pldmgr_snapshot.json
+            payloadforge/catalog_inputs/companion_snapshot.json
             payloadforge/native/embed_ui.py
             payloadforge/native/web/index.html
             payloadforge/native/web/ui.css
@@ -205,4 +213,20 @@ jobs:
         with:
           name: payloadforge-0.1.0-alpha-host-preview
           path: dist/
+          if-no-files-found: error
+
+      - name: Retrieve managed ELF from this successful build
+        uses: actions/download-artifact@v4
+        with:
+          name: payloadforge-runtime-managed-development
+          path: ${{ runner.temp }}/managed-artifact
+      - name: Assemble isolated demo hardware test kit
+        run: |
+          python3 -m payloadforge.rc_kit --artifact "$RUNNER_TEMP/managed-artifact" --out demo-hardware-kit --commit "$GITHUB_SHA" --run "$GITHUB_RUN_ID"
+          cd demo-hardware-kit
+          sha256sum --check SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: payloadforge-0.2.0-rc0-demo-hardware-kit
+          path: demo-hardware-kit/
           if-no-files-found: error

@@ -1,23 +1,19 @@
-# HUMAN_TODO — PayloadForge
+# HUMAN_TODO — PayloadForge v0.2.0-rc0-demo
 
-## Α. Τι χρειάζεται τώρα
-1. Καμία αλλαγή στο PS5 ή στο PLDMGR. Το native installer δεν είναι ακόμη ολοκληρωμένο. Μην ενεργοποιήσεις autoload για PayloadForge.
-2. Το SDK v0.42 έχει ήδη μεταγλωττιστεί στο CI· δεν χρειάζεται να μου δώσεις credentials ή να εγκαταστήσεις SDK. Το native ELF είναι μόνο read-only preflight, όχι installer.
+## Α. Πριν από οποιαδήποτε δοκιμή
+1. Καμία αλλαγή σε Y2JB, WebKit, boot chain, autoload, πραγματική βιβλιοθήκη ή ρυθμίσεις PLDMGR. Δεν απαιτείται προσωπικό credential. Δεν υπάρχει stable release.
+2. Χρησιμοποίησε μόνο το CI artifact `payloadforge-0.2.0-rc0-demo-hardware-kit` εφόσον το συγκεκριμένο GitHub Actions run έχει ολοκληρωθεί επιτυχώς. Αν δεν υπάρχει, μην προχωρήσεις. Έλεγξε CANDIDATE.json, SHA256SUMS και τα hashes του ELF/fixtures.
+3. Κατάγραψε μοντέλο, πραγματικό firmware 13.60 και έκδοση PLDMGR χωρίς firmware update. Κράτησε backup των σχετικών ρυθμίσεων.
+4. Επιβεβαίωσε ότι ο υπάρχων εξουσιοδοτημένος τοπικός launcher επιτρέπει ρητά argv και ασφαλή ανάγνωση stdout. Η απαίτηση για το managed demo είναι `--serve-managed --root /data/payloadforge-demo --port 0 --seconds 300`. Το root πρέπει να είναι ήδη υπάρχον, ιδιωτικό, χωρίς symlinks. Δεν παρέχεται ούτε απαιτείται νέος loader. Αν το υπάρχον περιβάλλον δεν υποστηρίζει αυτά τα prerequisites, σημείωσε BLOCKED· μην αλλάξεις boot chain ή δίκτυο για να το παρακάμψεις.
+5. Η πρόσβαση γίνεται μόνο από browser στην ίδια κονσόλα, στη διεύθυνση loopback που αναφέρει ο launcher. Ο προσωρινός session token δεν πρέπει να κοινοποιηθεί. Αν ο τοπικός browser/file picker δεν είναι διαθέσιμος, σημείωσε BLOCKED, όχι PASS.
 
-## Β. Μόλις υπάρχει πλήρες, CI-verified native RC
-3. Έλεγξε Settings → System → System Software → Console Information: firmware 13.60. Κατάγραψε επίσης μοντέλο PS5 και έκδοση PLDMGR. Μην κάνεις αναβάθμιση firmware.
-4. Από το συγκεκριμένο GitHub Actions run κατέβασε το υποψήφιο native artifact και το SHA256SUMS. Επαλήθευσε το SHA-256 πριν από οποιαδήποτε εκτέλεση. Αν δεν υπάρχει πλήρες native RC ή δεν ταιριάζει το hash, μην προχωρήσεις. Το payloadforge-preflight.elf δεν θεωρείται πλήρες RC.
-5. Κράτησε backup των σχετικών app-owned configs και PLDMGR ρυθμίσεων, επιβεβαίωσε ελεύθερο χώρο και χρησιμοποίησε αποκλειστικά δοκιμαστικά data-only bundles. Καμία αλλαγή σε Y2JB, WebKit, boot chain ή πραγματική βιβλιοθήκη.
+## Β. Δοκιμές
+6. Εκτέλεσε το HARDWARE_TEST_MATRIX.md από H01 έως H13. Χρησιμοποίησε αποκλειστικά τα μικρά συνθετικά data-only fixtures του kit.
+7. Για αλλαγή demo config, χρησιμοποιήσε μόνο ήδη εξουσιοδοτημένο τοπικό εργαλείο και μόνο το demo settings.json. Αν δεν υπάρχει ασφαλής τρόπος, BLOCKED. Μην πειράξεις αρχεία άλλων apps.
+8. Δεν υπάρχει παραγωγικό fault-injection hook. Μην προκαλέσεις διακοπή τροφοδοσίας. Αν δεν υπάρχει εγκεκριμένος τρόπος προσομοίωσης διακοπής, σημείωσε το αντίστοιχο test BLOCKED.
+9. Σε αβέβαιη απάντηση συναλλαγής, έλεγξε πρώτα status/recovery· μην επαναλάβεις αυτόματα την ενέργεια.
+10. Συμπλήρωσε HARDWARE_RESULT_TEMPLATE.json με PASS/FAIL/BLOCKED, πραγματική έκδοση και αποδεικτικά. Μην στείλεις tokens, credentials ή προσωπικά δεδομένα.
 
-## Γ. Hardware test plan (Stage 15)
-6. Install demo v1: επιβεβαίωσε version, registry και hashes των δοκιμαστικών αρχείων.
-7. Μέσω του εγκεκριμένου native test harness άλλαξε μόνο το demo settings.json. Κάνε update v2: το δικό σου setting πρέπει να μείνει, ενώ το demo asset πρέπει να ενημερωθεί. Αν δεν υπάρχει ασφαλής τρόπος αλλαγής του demo config, σημείωσε BLOCKED.
-8. Κάνε manual backup, rollback στη v1 και έλεγξε ότι μένει το τελευταίο config. Δοκίμασε λανθασμένο checksum, αλλοιωμένο snapshot, missing dependency και resource conflict: όλα πρέπει να μπλοκάρουν χωρίς αλλαγή ενεργής έκδοσης.
-9. Δοκίμασε uninstall με και χωρίς διατήρηση config, ύστερα reinstall. Τα μη καταχωρισμένα αρχεία δεν πρέπει να διαγραφούν. Τα backups παραμένουν διαθέσιμα.
-10. Έλεγξε μέσω ειδικού test hook προσομοιωμένη διακοπή πριν/μετά την ενεργοποίηση. Μην αφαιρέσεις σκόπιμα την τροφοδοσία του PS5. Επιβεβαίωσε ότι υπάρχει έγκυρη ενεργή έκδοση ή εμφανής αναφορά ανάκτησης.
-11. Έλεγξε ότι ο PLDMGR διατηρεί ακριβώς το source URL, τα υπάρχοντα IDs, τα favorites και τις ρυθμίσεις. Μην αλλάξεις autoload.
-12. Στείλε αποτελέσματα ανά test: PASS/FAIL/BLOCKED, έκδοση RC, firmware, σχετικά logs και παρατηρήσεις. Μην στείλεις credentials ή προσωπικά δεδομένα.
-
-## Δ. Τελική έγκριση (Stage 16)
-13. Πριν από διανομή, ελέγχουμε προέλευση/άδειες/αντίστοιχο πηγαίο κώδικα του native build και κάθε νέου package. Οι αμφίβολες πηγές μένουν στο review-candidates.json.
-14. Stable release και προώθηση στο main μόνο μετά από πλήρη native engine, πράσινο CI και πραγματικά επιτυχημένα hardware tests. Δεν έχει εκδοθεί stable release.
+## Γ. Τελική έγκριση
+11. Το demo candidate ΔΕΝ εγκαθιστά κανονικά ELF payloads και δεν ενσωματώνεται ως αυτόματος loader. Ο κατάλογος PLDMGR είναι read-only reference. Εγκεκριμένα companion πακέτα: 0.
+12. Full installer και stable release παραμένουν μπλοκαρισμένα έως πραγματικά επιτυχημένα hardware tests, επαληθευμένη συμβατότητα launcher/browser, τεκμηριωμένη προέλευση πακέτων και ξεχωριστή έγκριση παραγωγής.
