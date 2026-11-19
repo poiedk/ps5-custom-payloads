@@ -62,7 +62,7 @@ static int write_member(int root,const pf_zip_entry *e){
 }
 static int lock_exclusive(int fd){
  struct flock lock={0};lock.l_type=F_WRLCK;lock.l_whence=SEEK_SET;
- int rc;do{rc=fcntl(fd,F_SETLKW,&lock);}while(rc<0&&errno==EINTR);
+ int rc;do{rc=fcntl(fd,F_SETLK,&lock);}while(rc<0&&errno==EINTR);
  return rc;
 }
 static int exists_at(int fd,const char *name){
@@ -595,7 +595,7 @@ static int recovery_lock(int root){
  if(lock<0)return errno==ENOENT?-2:-1;
  if(fstat(lock,&st)||!S_ISREG(st.st_mode)||st.st_uid!=geteuid()||st.st_nlink!=1||(st.st_mode&0077)){close(lock);return -1;}
  struct flock l={0};l.l_type=F_RDLCK;l.l_whence=SEEK_SET;
- int rc;do{rc=fcntl(lock,F_SETLKW,&l);}while(rc<0&&errno==EINTR);
+ int rc;do{rc=fcntl(lock,F_SETLK,&l);}while(rc<0&&errno==EINTR);
  if(rc){close(lock);return -1;}return lock;
 }
 static int named_hash(const char *name,const char *prefix){

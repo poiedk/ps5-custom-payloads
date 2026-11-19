@@ -1,4 +1,6 @@
 import ctypes as C
+import subprocess
+import sys
 import hashlib, pathlib, unittest
 import test_native_store as base
 
@@ -77,6 +79,28 @@ class NativeRecoveryTests(unittest.TestCase):
         snapshot=self.app()/"backups"/p.current.decode()
         (snapshot/"data/settings.json").write_bytes(b"corrupt")
         self.assertEqual(self.inspect().integrity,2)
+    def test_busy_store_fails_without_waiting_or_mutating(self):
+        self.assertEqual(self.install(), 0)
+        before = self.tree()
+        lock_script = (
+            "import fcntl, sys, time\n"
+            "with open(sys.argv[1], 'r+') as lock:\n"
+            "    fcntl.lockf(lock, fcntl.LOCK_EX)\n"
+            "    print('locked', flush=True)\n"
+            "    time.sleep(5)\n"
+        )
+        with subprocess.Popen([sys.executable, "-c", lock_script, self.root / ".lock"],
+                              stdout=subprocess.PIPE, text=True) as holder:
+            try:
+                self.assertEqual(holder.stdout.readline().strip(), "locked")
+                self.inspect(-1)
+                self.assertNotEqual(self.lib.pf_backup(self.fd, b"demo", None), 0)
+                self.assertIsNone(holder.poll())
+            finally:
+                holder.terminate()
+        self.assertEqual(self.tree(), before)
+        self.assertEqual(self.inspect().integrity, 1)
+
     def test_invalid_lock(self):
         outside=self.root/"outside";outside.write_bytes(b"private")
         (self.root/".lock").symlink_to(outside)
