@@ -94,7 +94,7 @@ class NativeRecoveryTests(unittest.TestCase):
             try:
                 self.assertEqual(holder.stdout.readline().strip(), "locked")
                 self.inspect(-1)
-                self.assertNotEqual(self.lib.pf_backup(self.fd, b"demo", None), 0)
+                self.assertNotEqual(self.lib.pf_backup(self.fd, b"demo", C.create_string_buffer(65)), 0)
                 self.assertIsNone(holder.poll())
             finally:
                 holder.terminate()
