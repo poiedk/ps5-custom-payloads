@@ -17,7 +17,13 @@ def validate_artifact(source):
         raise ValueError("missing/oversized managed ELF")
     with elf.open("rb") as f:
         if f.read(4)!=b"\x7fELF":raise ValueError("not ELF")
-    line=sums.read_text(encoding="ascii").strip()
+    if sums.is_symlink() or not sums.is_file() or sums.stat().st_size > 256:
+        raise ValueError("invalid managed ELF checksum file")
+    with sums.open("rb") as stream:
+        raw = stream.read(257)
+    if len(raw) > 256:
+        raise ValueError("oversized managed ELF checksum file")
+    line = raw.decode("ascii").removesuffix("\n")
     if not re.fullmatch(r"[a-f0-9]{64}  "+re.escape(ELF),line) or digest(elf)!=line[:64]:
         raise ValueError("managed ELF checksum mismatch")
     if not zlib.is_file() or zlib.is_symlink() or zlib.stat().st_size>4*1024*1024 or digest(zlib)!=ZLIB_SHA256:

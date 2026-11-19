@@ -30,3 +30,14 @@ class CandidateKitTests(unittest.TestCase):
     def test_bad_ci_identity_refused(self):
         with self.assertRaises(ValueError):rc_kit.assemble(self.root,self.root/"out","branch","bad")
         self.assertFalse((self.root/"out").exists())
+    def test_checksum_file_must_be_regular_and_bounded(self):
+        with patch.object(rc_kit, "ZLIB_SHA256", rc_kit.digest(self.zlib)):
+            self.sums.write_text(self.sums.read_text() + " " * 300)
+            with self.assertRaises(ValueError):
+                rc_kit.validate_artifact(self.root)
+            target = self.sums.with_suffix(".target")
+            target.write_text(self.hash + "  " + rc_kit.ELF + "\n")
+            self.sums.unlink()
+            self.sums.symlink_to(target)
+            with self.assertRaises(ValueError):
+                rc_kit.validate_artifact(self.root)
