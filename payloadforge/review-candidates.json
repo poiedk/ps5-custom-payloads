@@ -151,7 +151,24 @@
       "evidence": [
         "https://store.brewology.com/ps5/archivefetch/"
       ]
+    },
+    {
+      "id": "ps5-wh-widgets",
+      "repo": "geodox/ps5-wh-widgets",
+      "kind": "standalone-with-optional-widgets",
+      "asset_pattern": "^wh_bridge\\.elf$",
+      "status": "hold",
+      "reason": "2026-11-18 beta: upstream README explicitly reports 13.20/13.60 on-console verification; Reddit 2026-11-12 includes user confirmation on 13.60. Public MIT source; upstream feed publishes exact ELF URL and SHA-256. Own feed exists; avoid duplication. Runtime SceShellUI hooks and widget JS/URI launch require review. Full release commit, repo age, developer identity, exact asset bytes independently hashed and source-to-binary review not verified.",
+      "release": "26.11.18beta",
+      "upstream_sha256": "d9a48e47ecd1cda5c84c7dcce96cbba027535dc1354cd3d798b7ed28ea9b66d6",
+      "evidence": [
+        "https://github.com/geodox/ps5-wh-widgets",
+        "https://github.com/geodox/ps5-wh-widgets/blob/main/repo.json",
+        "https://github.com/geodox/ps5-wh-widgets/releases/tag/26.11.18beta",
+        "https://www.reddit.com/r/ps5homebrew/comments/1xz14am/welcome_hub_widgets/",
+        "https://www.reddit.com/r/ps5homebrew/comments/1xu2xa2/beta_release_ps5whwidgets_custom_welcome_hub/"
+      ]
     }
   ],
-  "checked_on": "2026-11-18"
+  "checked_on": "2026-11-19"
 }
