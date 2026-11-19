@@ -268,3 +268,11 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - [Run 44386777985](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44386777985), tested head cf3947fa4bb18988c1e1315d6c77d8bc7992ad8e: all three jobs succeeded; actual log `Ran 403 tests in 113.086s` / `OK`; Chromium browser E2E PASS (auth, verify, tamper, install, backup, update, rollback, recovery, uninstall, session reset).
 - Pinned catalog preview, bounded local read-only PLDMGR version probe (mock upstream tested), three SDK ELF builds and isolated synthetic data-only demo hardware kit assembled. Artifact 14465899768.
 - PR #22 merged into development only at 651a62d17f3e00ab02b3ebbe9a79c3c1428601ce on 2026-11-19. No production merge or stable release. No actual console test, executable payload installation, or live PS5 compatibility claim. Post-merge CI and security review remain pending.
+
+### RC0 follow-up — host security review and hardware preparation
+
+- The post-merge workflow passed at 651a62d1 (run 44560600016) and ee36a627 (run 44560641628).
+- Store lock contention now returns failure promptly for both inspection and writes. A separate-process regression checks backup and inspection under contention, preserved state and successful inspection after release.
+- Candidate packaging checks the checksum manifest type and size before parsing it. Focused regressions cover oversized and symlinked manifests. The runtime permission test explicitly sets its fixture mode so it works with a private build umask.
+- The H10 kit pairs the v1 archive with two additional synthetic manifests. Host transactions reject the missing dependency and the declared conflict and preserve the active generation.
+- Linux host preflight, JavaScript syntax and the Chromium demo lifecycle passed during development. Use the successful CI run for the exact candidate commit to identify the SDK build and hardware kit. H01–H13 require console evidence. Full installation also requires approved package provenance and production review.
