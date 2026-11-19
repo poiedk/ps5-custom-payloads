@@ -276,3 +276,7 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Candidate packaging checks the checksum manifest type and size before parsing it. Focused regressions cover oversized and symlinked manifests. The runtime permission test explicitly sets its fixture mode so it works with a private build umask.
 - The H10 kit pairs the v1 archive with two additional synthetic manifests. Host transactions reject the missing dependency and the declared conflict and preserve the active generation.
 - Linux host preflight, JavaScript syntax and the Chromium demo lifecycle passed during development. Use the successful CI run for the exact candidate commit to identify the SDK build and hardware kit. H01–H13 require console evidence. Full installation also requires approved package provenance and production review.
+
+### Media shortcut — fixed loopback endpoint
+
+Linux managed-runtime check: two consecutive sessions served the UI at http://127.0.0.1:18086 with distinct tokens. A competing listener was rejected. Fixed-port listeners now request SO_REUSEADDR to permit immediate reuse after a connection closes. Port 18086 was a host test choice. PS5 Media tile registration and console behavior remain unverified; no tile installer is included.

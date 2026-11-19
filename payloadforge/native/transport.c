@@ -53,6 +53,11 @@ int pf_http_listen(unsigned port,unsigned *bound_port){
  if(!bound_port)return -1;
  *bound_port=0;if(port>65535)return -1;
  int fd=socket(AF_INET,SOCK_STREAM,0);if(fd<0)return -1;
+ /* Let a fixed shortcut URL survive a restart while old connections drain. */
+ int reuse=1;
+ if(port&&setsockopt(fd,SOL_SOCKET,SO_REUSEADDR,&reuse,sizeof reuse)){
+  close(fd);return -1;
+ }
  struct sockaddr_in address={0};address.sin_family=AF_INET;
  #ifdef __FreeBSD__
  address.sin_len=sizeof address;
