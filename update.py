@@ -56,6 +56,8 @@ def main():
     retired={x['id']:x for x in archive['payloads']}
     missing=set()
     sources=json.loads((ROOT/'sources.json').read_text())
+    if not sources:
+        raise SystemExit('Empty source configuration; refusing to overwrite catalog')
     for s in sources:
         try:
             getter=get_codeberg if s.get('provider')=='codeberg' else get
@@ -79,7 +81,7 @@ def main():
                 results.append(previous[s['id']])
     for e in errors:
         print(e,file=sys.stderr)
-    if not results and not retired:
+    if not results:
         raise SystemExit('No qualifying assets; refusing to overwrite catalog')
     icon_path=ROOT/'icons.json'
     cached=json.loads(icon_path.read_text()).get('icons',{}) if icon_path.exists() else {}
@@ -87,7 +89,7 @@ def main():
     archive['payloads']=list(retired.values())
     archive['icons']={x['icon_key']:cached[x['icon_key']] for x in retired.values() if x.get('icon_key') in cached}
     write(archive_path,archive)
-    icons,icon_report=build_icons(results,{s['id']:s for s in sources},cached,previous)
+    icons,icon_report=build_icons(results,{s['id']:s for s in sources},cached,{**retired,**previous})
     write(ROOT/'icons.json',icons)
     write(OUT,{'name':'DK PS5 Custom Payloads','icons_url':'icons.json','payloads':results})
     write(ROOT/'payloads.json',results)
