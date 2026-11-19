@@ -63,7 +63,12 @@ def main():
         print(e,file=sys.stderr)
     if not results:
         raise SystemExit('No qualifying assets; refusing to overwrite catalog')
-    icons,icon_report=build_icons(results,{s['id']:s for s in sources})
+    icon_path=ROOT/'icons.json'
+    cached=json.loads(icon_path.read_text()).get('icons',{}) if icon_path.exists() else {}
+    archive_path=ROOT/'unavailable.json'
+    archive=json.loads(archive_path.read_text()) if archive_path.exists() else {'payloads':[], 'icons':{}}
+    cached.update(archive.get('icons',{}))
+    icons,icon_report=build_icons(results,{s['id']:s for s in sources},cached,previous)
     write(ROOT/'icons.json',icons)
     write(OUT,{'name':'DK PS5 Custom Payloads','icons_url':'icons.json','payloads':results})
     write(ROOT/'payloads.json',results)
