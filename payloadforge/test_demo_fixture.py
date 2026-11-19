@@ -11,6 +11,14 @@ class FixtureTests(unittest.TestCase):
                 raw=(out/("demo-v"+version+".zip")).read_bytes()
                 return raw,hashlib.sha256(raw).hexdigest(),json.loads((out/("demo-v"+version+".json")).read_text())
             a=e.install(*p("1.0.0"),action="install")
+            raw, digest, _ = p("1.0.0")
+            pointer = root / "managed/apps/payloadforge-demo/CURRENT"
+            previous = pointer.read_bytes()
+            for field, reason in (("dependencies", "missing dependency"), ("conflicts", "declared version conflict")):
+                manifest = json.loads((out / ("negative-" + field + ".json")).read_text())
+                with self.assertRaisesRegex(ValueError, reason):
+                    e.install(raw, digest, manifest, action="install")
+                self.assertEqual(pointer.read_bytes(), previous)
             data=root/"managed/apps/payloadforge-demo/generations"/a["generation"]/"data"
             (data/"settings.json").write_text('{"theme":"user"}')
             b=e.install(*p("2.0.0"),action="upgrade")

@@ -19,6 +19,13 @@ def generate(out):
         mp=out/(prefix+".json")
         mp.write_text(json.dumps(manifest,indent=2)+"\n")
         for p in (path,mp):hashes.append(hashlib.sha256(p.read_bytes()).hexdigest()+"  "+p.name)
+    # Both H10 manifests describe the same harmless files as the v1 archive.
+    base = json.loads((out / "demo-v1.0.0.json").read_text())
+    for field, peer in (("dependencies", "absent-demo-peer"), ("conflicts", "payloadforge-demo")):
+        manifest = {**base, "id": "demo-negative", field: [{"id": peer, "constraint": "*"}]}
+        path = out / ("negative-" + field + ".json")
+        path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="ascii")
+        hashes.append(hashlib.sha256(path.read_bytes()).hexdigest() + "  " + path.name)
     (out/"SHA256SUMS").write_text("\n".join(hashes)+"\n")
 def main():
     p=argparse.ArgumentParser();p.add_argument("--out",required=True,type=Path)
