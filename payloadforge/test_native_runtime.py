@@ -46,7 +46,9 @@ class NativeRuntimeTests(unittest.TestCase):
         self.assertEqual(subprocess.run(self.args(p),capture_output=True,timeout=2).returncode,1)
         self.assertFalse(p.exists())
     def test_symlink_and_nonprivate(self):
-        other=self.root/"other";other.mkdir(mode=0o755)
+        other = self.root / "other"
+        other.mkdir()
+        other.chmod(0o755)
         link=self.root/"link";link.symlink_to(self.root)
         for p in (other,link,link/"other"):
             self.assertEqual(subprocess.run(self.args(p),capture_output=True,timeout=2).returncode,1)
