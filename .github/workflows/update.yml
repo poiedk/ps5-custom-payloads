@@ -29,5 +29,5 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add payloads.json payloads_v2.json status.json icons.json
+          git add payloads.json payloads_v2.json status.json icons.json unavailable.json
           git diff --cached --quiet || { git commit -m 'Refresh payload catalog'; git push; }
