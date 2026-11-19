@@ -263,3 +263,8 @@ Statuses distinguish implemented, CI-verified and hardware-verified.
 - Four tests cover real host socket retrieval of exact embedded files, CSP and fixed routes, API authorization isolation, source security expectations. UI exposes verified package actions and managed controls, with explicit operator confirmation. No real browser test yet.
 - PR #18 merged into development only at 9125e5582c3b7f1f28bd76a31f144a05d95ae0da. Managed-development artifact 14460553966, SHA-256 75a71c8ace921911f90300df29b3deae2ebb65b2d413de0e7f495b2035a0f17d.
 - Remaining gates: actual browser end-to-end, launcher/console runtime, native catalog/PLDMGR compatibility; no real PS5 install or stable release.
+
+### N14-B / N15 / N16 — combined demo RC0 gate
+- [Run 44386777985](https://github.com/poiedk/ps5-custom-payloads/actions/runs/44386777985), tested head cf3947fa4bb18988c1e1315d6c77d8bc7992ad8e: all three jobs succeeded; actual log `Ran 403 tests in 113.086s` / `OK`; Chromium browser E2E PASS (auth, verify, tamper, install, backup, update, rollback, recovery, uninstall, session reset).
+- Pinned catalog preview, bounded local read-only PLDMGR version probe (mock upstream tested), three SDK ELF builds and isolated synthetic data-only demo hardware kit assembled. Artifact 14465899768.
+- PR #22 merged into development only at 651a62d17f3e00ab02b3ebbe9a79c3c1428601ce on 2026-11-19. No production merge or stable release. No actual console test, executable payload installation, or live PS5 compatibility claim. Post-merge CI and security review remain pending.
