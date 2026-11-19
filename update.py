@@ -1,4 +1,4 @@
-import json, os, re, urllib.request, pathlib, sys
+import json, os, re, urllib.request, urllib.error, pathlib, sys
 from payload_icons import build_icons
 ROOT = pathlib.Path(__file__).resolve().parent
 OUT = ROOT / 'payloads_v2.json'
@@ -51,23 +51,42 @@ def write(path,data):
 def main():
     previous={x['id']:x for x in json.loads(OUT.read_text())['payloads']} if OUT.exists() else {}
     results=[]; errors=[]
+    archive_path=ROOT/'unavailable.json'
+    archive=json.loads(archive_path.read_text()) if archive_path.exists() else {'schema_version':1,'payloads':[], 'icons':{}}
+    retired={x['id']:x for x in archive['payloads']}
+    missing=set()
     sources=json.loads((ROOT/'sources.json').read_text())
     for s in sources:
         try:
-            results.append(select(s,(get_codeberg(s['repo']) if s.get('provider')=='codeberg' else get(s['repo']))))
+            getter=get_codeberg if s.get('provider')=='codeberg' else get
+            try:
+                releases=getter(s['repo'])
+            except urllib.error.HTTPError as e:
+                if e.code!=404: raise
+                try:
+                    releases=getter(s['repo'])
+                except urllib.error.HTTPError as retry:
+                    if retry.code==404: missing.add(s['id'])
+                    raise
+            results.append(select(s,releases))
+            retired.pop(s['id'],None)
         except Exception as e:
             errors.append(s['id']+': '+str(e))
-            if s['id'] in previous:
+            if s['id'] in missing and s['id'] in previous:
+                meta={k:v for k,v in previous[s['id']].items() if k not in ('url','source_direct')}
+                retired[s['id']]={**meta,'availability':'source_unavailable','reason':'repeated_http_404','download_available':False,'notice':'Source unavailable (404). Installed copies are not removed.'}
+            elif s['id'] in previous:
                 results.append(previous[s['id']])
     for e in errors:
         print(e,file=sys.stderr)
-    if not results:
+    if not results and not retired:
         raise SystemExit('No qualifying assets; refusing to overwrite catalog')
     icon_path=ROOT/'icons.json'
     cached=json.loads(icon_path.read_text()).get('icons',{}) if icon_path.exists() else {}
-    archive_path=ROOT/'unavailable.json'
-    archive=json.loads(archive_path.read_text()) if archive_path.exists() else {'payloads':[], 'icons':{}}
     cached.update(archive.get('icons',{}))
+    archive['payloads']=list(retired.values())
+    archive['icons']={x['icon_key']:cached[x['icon_key']] for x in retired.values() if x.get('icon_key') in cached}
+    write(archive_path,archive)
     icons,icon_report=build_icons(results,{s['id']:s for s in sources},cached,previous)
     write(ROOT/'icons.json',icons)
     write(OUT,{'name':'DK PS5 Custom Payloads','icons_url':'icons.json','payloads':results})
