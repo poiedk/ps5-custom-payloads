@@ -1,7 +1,8 @@
 {
   "warnings": [
     "omnipad: no matching release asset",
-    "lz4-compression: no matching release asset"
+    "lz4-compression: no matching release asset",
+    "anypad: The read operation timed out"
   ],
   "icons": {
     "kraken-mount": {
