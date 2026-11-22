@@ -15,19 +15,19 @@
       "risk_notes": [
         "Repository created recently (November 2026); provenance and source commit audit pending",
         "Bundles and automatically loads kstuff-lite and ShadowMountPlus; possible conflict with existing autoload",
-        "Release ELF byte-for-byte independent SHA-256 not verified",
-        "User reports include game compatibility issues"
+        "User reports include game compatibility issues",
+        "Hardware validation on firmware 13.60 and interaction with existing kstuff/ShadowMount chain not yet performed"
       ],
       "required_before_promotion": [
-        "Pin and audit public source commit and build provenance",
-        "Verify firmware 13.60 compatibility and developer identity",
-        "Confirm CI green and no duplicate/unsafe boot behavior"
+        "Complete code/provenance audit of pinned source and bundled ELF dependencies",
+        "Validate firmware 13.60 on actual PS5 and avoid duplicate kstuff/ShadowMount launches",
+        "Confirm DK PR CI and review catalog integration before enabling"
       ],
       "enabled": false,
       "source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
       "source_commit_url": "https://github.com/devchmod/TITAN-CORE/tree/2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
       "independent_report": "MODDED WARFARE, 2026-11-21: Install and Run Fake Packages up to 13.60 with TitanCore",
-      "review_note": "Independent SHA-256 PASS. Source audit, PS5 13.60 hardware behavior, embedded payload interaction and DK CI still require validation.",
+      "review_note": "Release ELF SHA256 verified independently; staged for integration only, NOT enabled. Requires hardware chain validation and complete code audit.",
       "audit": {
         "date": "2026-11-22",
         "pinned_source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
@@ -44,8 +44,8 @@
           "Public report disputes bundled service startup reliability; needs reproduction",
           "Confirmed upstream CI success for pinned source commit; release asset reproducibility not established"
         ],
-        "source_review_scope": "documentation and CI workflow only; no complete static audit or binary verification",
-        "promotion": "BLOCKED",
+        "source_review_scope": "Partial review: docs, CI, and selected boot/launch source files; not a complete static security audit",
+        "promotion": "BLOCKED_HARDWARE_AND_SECURITY_REVIEW",
         "upstream_ci": {
           "source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
           "runs": [
@@ -76,7 +76,7 @@
             "One startup-attempt marker per boot and 90-second readiness deadline; no automatic retry on uncertain dispatch",
             "Existing service detection can still be imperfect; requires explicit opt-in and hardware validation for user's existing payload chain"
           ],
-          "decision": "NO-GO for automatic catalog promotion; embedded kernel payload dispatch needs special risk acceptance and independent binary verification"
+          "decision": "NO-GO for automatic catalog promotion; source boots embedded kernel payloads. Explicit hardware acceptance and integration review required."
         },
         "binary_integrity": {
           "result": "PASS",
