@@ -35,6 +35,10 @@
     "anypad": {
       "type": "upstream",
       "url": "https://codeberg.org/elmonomalva0/Any-Pad-ps5/raw/branch/main/assets/logo.png"
+    },
+    "titan-core": {
+      "type": "upstream",
+      "url": "https://raw.githubusercontent.com/devchmod/TITAN-CORE/main/ps5/icon0.png"
     }
   }
 }

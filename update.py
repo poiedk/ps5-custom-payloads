@@ -44,7 +44,7 @@ def select(s, releases):
         host='https://codeberg.org/' if s.get('provider')=='codeberg' else 'https://github.com/'
         if not url.lower().startswith((host+s['repo']+'/releases/download/').lower()):
             raise ValueError('unexpected download URL')
-        return dict(id=s['id'],name=s['name'],filename=s['id']+'.elf',url=url,source_direct=url,version=r['tag_name'],last_update=r['published_at'][:10],category='Utilities & Tools',checksum=digest[7:].lower(),source=host+s['repo']+'/releases',description='Verify firmware compatibility before use.')
+        return dict(id=s['id'],name=s['name'],filename=s['id']+'.elf',url=url,source_direct=url,version=r['tag_name'],last_update=r['published_at'][:10],category='Utilities & Tools',checksum=digest[7:].lower(),source=host+s['repo']+'/releases',description=('MANUAL LAUNCH ONLY. Bundles kstuff-lite and ShadowMountPlus; may conflict with an existing jailbreak payload chain. Verify PS5 firmware 13.60 and active services before running.' if s['id']=='titan-core' else 'Verify firmware compatibility before use.'))
     raise ValueError('no matching release asset')
 def write(path,data):
     path.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n')

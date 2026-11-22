@@ -69,5 +69,12 @@
     "name": "AnyPad",
     "pattern": "AnyPad-PS5(?:-v?[0-9.]+(?:-beta[0-9.]*)?)?\\.elf",
     "prerelease": true
+  },
+  {
+    "id": "titan-core",
+    "repo": "devchmod/TITAN-CORE",
+    "name": "TITAN CORE",
+    "pattern": "TITAN-CORE-v[0-9]+\\.[0-9]+\\.elf",
+    "prerelease": false
   }
 ]

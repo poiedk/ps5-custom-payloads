@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "candidates": [
+    {
+      "id": "titan-core",
+      "name": "TITAN CORE",
+      "status": "review_no_go",
+      "repository": "https://github.com/devchmod/TITAN-CORE",
+      "release": "https://github.com/devchmod/TITAN-CORE/releases/tag/v1.0.0",
+      "asset": "TITAN-CORE-v1.0.elf",
+      "asset_pattern": "^TITAN-CORE-v[0-9]+\\.[0-9]+\\.elf$",
+      "upstream_sha256": "50f074700fc4f427ae87fb2cb986ad07d633ef01799077953817a6ffded7f91d",
+      "independent_sha256": "50f074700fc4f427ae87fb2cb986ad07d633ef01799077953817a6ffded7f91d",
+      "firmware": "13.60 developer-reported; independent validation incomplete",
+      "risk_notes": [
+        "Repository created recently (November 2026); provenance and source commit audit pending",
+        "Bundles and automatically loads kstuff-lite and ShadowMountPlus; possible conflict with existing autoload",
+        "User reports include game compatibility issues",
+        "Hardware validation on firmware 13.60 and interaction with existing kstuff/ShadowMount chain not yet performed"
+      ],
+      "required_before_promotion": [
+        "Complete code/provenance audit of pinned source and bundled ELF dependencies",
+        "Validate firmware 13.60 on actual PS5 and avoid duplicate kstuff/ShadowMount launches",
+        "Confirm DK PR CI and review catalog integration before enabling"
+      ],
+      "enabled": false,
+      "source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
+      "source_commit_url": "https://github.com/devchmod/TITAN-CORE/tree/2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
+      "independent_report": "MODDED WARFARE, 2026-11-21: Install and Run Fake Packages up to 13.60 with TitanCore",
+      "review_note": "Release ELF SHA256 verified independently; staged for integration only, NOT enabled. Requires hardware chain validation and complete code audit.",
+      "audit": {
+        "date": "2026-11-22",
+        "pinned_source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
+        "inspected_files": [
+          "docs/V1_0_VALIDATION.md",
+          "vendor/unified/PROVENANCE.md",
+          ".github/workflows/build.yml"
+        ],
+        "findings": [
+          "Upstream documentation claims 104 synthetic Rust tests and two successful ELF build stages; independently unverified",
+          "Pinned vendor kstuff-lite v1.11 and ShadowMountPlus 1.7beta10 are embedded as release binaries, not rebuilt from source",
+          "Maintainer explicitly says no new v1.0 hardware acceptance test and no universal firmware/game compatibility",
+          "External PKG system storage accounting unresolved",
+          "Public report disputes bundled service startup reliability; needs reproduction",
+          "Confirmed upstream CI success for pinned source commit; release asset reproducibility not established"
+        ],
+        "source_review_scope": "Partial review: docs, CI, and selected boot/launch source files; not a complete static security audit",
+        "promotion": "BLOCKED_HARDWARE_AND_SECURITY_REVIEW",
+        "upstream_ci": {
+          "source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
+          "runs": [
+            {
+              "id": 43797411832,
+              "conclusion": "success",
+              "url": "https://github.com/devchmod/TITAN-CORE/actions/runs/43797411832"
+            },
+            {
+              "id": 43796992751,
+              "conclusion": "success",
+              "url": "https://github.com/devchmod/TITAN-CORE/actions/runs/43796992751"
+            }
+          ],
+          "note": "Upstream CI success is not DK catalog promotion CI and does not establish ELF provenance or safety."
+        },
+        "code_review": {
+          "commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
+          "files": [
+            "src/stack.rs",
+            "src/stack_policy.rs",
+            "src/launch.rs"
+          ],
+          "findings": [
+            "Boot path checks firmware and refuses outside 1.00–13.60; source-level check does not prove real hardware compatibility",
+            "Boot may write embedded ShadowMountPlus/kstuff ELFs under /data/titan-core/payloads and dispatch them, rather than operating as a passive UI",
+            "Existing ready services are reused; inconsistent ShadowMount-ready/kstuff-not-ready state blocks reload",
+            "One startup-attempt marker per boot and 90-second readiness deadline; no automatic retry on uncertain dispatch",
+            "Existing service detection can still be imperfect; requires explicit opt-in and hardware validation for user's existing payload chain"
+          ],
+          "decision": "NO-GO for automatic catalog promotion; source boots embedded kernel payloads. Explicit hardware acceptance and integration review required."
+        },
+        "binary_integrity": {
+          "result": "PASS",
+          "file": "TITAN-CORE-v1.0.elf",
+          "size_bytes": 17391872,
+          "sha256": "50f074700fc4f427ae87fb2cb986ad07d633ef01799077953817a6ffded7f91d",
+          "method": "independent sha256sum of user-supplied release ELF; matches upstream release asset digest",
+          "note": "Integrity match does not establish safety, reproducibility, or console compatibility"
+        }
+      }
+    }
+  ]
+}

@@ -113,6 +113,20 @@
       "source": "https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases",
       "description": "Verify firmware compatibility before use.",
       "icon_key": "51a9d9db433222d2d21d1d4100d2b37261a0415f36d39f783cc31baf5d8c8227"
+    },
+    {
+      "id": "titan-core",
+      "name": "TITAN CORE",
+      "filename": "titan-core.elf",
+      "url": "https://github.com/devchmod/TITAN-CORE/releases/download/v1.0.0/TITAN-CORE-v1.0.elf",
+      "source_direct": "https://github.com/devchmod/TITAN-CORE/releases/download/v1.0.0/TITAN-CORE-v1.0.elf",
+      "version": "v1.0.0",
+      "last_update": "2026-11-16",
+      "category": "Utilities & Tools",
+      "checksum": "50f074700fc4f427ae87fb2cb986ad07d633ef01799077953817a6ffded7f91d",
+      "source": "https://github.com/devchmod/TITAN-CORE/releases",
+      "description": "MANUAL LAUNCH ONLY. Bundles kstuff-lite and ShadowMountPlus; may conflict with an existing jailbreak payload chain. Verify PS5 firmware 13.60 and active services before running.",
+      "icon_key": "cc929b77ba1781aa61cdfcead7259ac83387a277e4f26c769afa15c1fcf3702e"
     }
   ]
 }
