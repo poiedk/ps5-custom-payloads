@@ -63,6 +63,22 @@
             }
           ],
           "note": "Upstream CI success is not DK catalog promotion CI and does not establish ELF provenance or safety."
+        },
+        "code_review": {
+          "commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
+          "files": [
+            "src/stack.rs",
+            "src/stack_policy.rs",
+            "src/launch.rs"
+          ],
+          "findings": [
+            "Boot path checks firmware and refuses outside 1.00–13.60; source-level check does not prove real hardware compatibility",
+            "Boot may write embedded ShadowMountPlus/kstuff ELFs under /data/titan-core/payloads and dispatch them, rather than operating as a passive UI",
+            "Existing ready services are reused; inconsistent ShadowMount-ready/kstuff-not-ready state blocks reload",
+            "One startup-attempt marker per boot and 90-second readiness deadline; no automatic retry on uncertain dispatch",
+            "Existing service detection can still be imperfect; requires explicit opt-in and hardware validation for user's existing payload chain"
+          ],
+          "decision": "NO-GO for automatic catalog promotion; embedded kernel payload dispatch needs special risk acceptance and independent binary verification"
         }
       }
     }
