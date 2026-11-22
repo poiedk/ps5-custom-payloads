@@ -10,7 +10,7 @@
       "asset": "TITAN-CORE-v1.0.elf",
       "asset_pattern": "^TITAN-CORE-v[0-9]+\\.[0-9]+\\.elf$",
       "upstream_sha256": "50f074700fc4f427ae87fb2cb986ad07d633ef01799077953817a6ffded7f91d",
-      "independent_sha256": null,
+      "independent_sha256": "50f074700fc4f427ae87fb2cb986ad07d633ef01799077953817a6ffded7f91d",
       "firmware": "13.60 developer-reported; independent validation incomplete",
       "risk_notes": [
         "Repository created recently (November 2026); provenance and source commit audit pending",
@@ -20,7 +20,6 @@
       ],
       "required_before_promotion": [
         "Pin and audit public source commit and build provenance",
-        "Download exact ELF and independently calculate SHA-256",
         "Verify firmware 13.60 compatibility and developer identity",
         "Confirm CI green and no duplicate/unsafe boot behavior"
       ],
@@ -28,7 +27,7 @@
       "source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
       "source_commit_url": "https://github.com/devchmod/TITAN-CORE/tree/2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
       "independent_report": "MODDED WARFARE, 2026-11-21: Install and Run Fake Packages up to 13.60 with TitanCore",
-      "review_note": "Upstream release ELF SHA256 metadata present; independent byte download blocked by network DNS in verification environment. No static code audit completed. Do not promote.",
+      "review_note": "Independent SHA-256 PASS. Source audit, PS5 13.60 hardware behavior, embedded payload interaction and DK CI still require validation.",
       "audit": {
         "date": "2026-11-22",
         "pinned_source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
@@ -43,7 +42,6 @@
           "Maintainer explicitly says no new v1.0 hardware acceptance test and no universal firmware/game compatibility",
           "External PKG system storage accounting unresolved",
           "Public report disputes bundled service startup reliability; needs reproduction",
-          "Local verification environment cannot resolve github.com; exact ELF bytes and independent SHA-256 unavailable",
           "Confirmed upstream CI success for pinned source commit; release asset reproducibility not established"
         ],
         "source_review_scope": "documentation and CI workflow only; no complete static audit or binary verification",
@@ -79,6 +77,14 @@
             "Existing service detection can still be imperfect; requires explicit opt-in and hardware validation for user's existing payload chain"
           ],
           "decision": "NO-GO for automatic catalog promotion; embedded kernel payload dispatch needs special risk acceptance and independent binary verification"
+        },
+        "binary_integrity": {
+          "result": "PASS",
+          "file": "TITAN-CORE-v1.0.elf",
+          "size_bytes": 17391872,
+          "sha256": "50f074700fc4f427ae87fb2cb986ad07d633ef01799077953817a6ffded7f91d",
+          "method": "independent sha256sum of user-supplied release ELF; matches upstream release asset digest",
+          "note": "Integrity match does not establish safety, reproducibility, or console compatibility"
         }
       }
     }
