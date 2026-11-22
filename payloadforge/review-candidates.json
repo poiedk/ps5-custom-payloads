@@ -24,7 +24,11 @@
         "Verify firmware 13.60 compatibility and developer identity",
         "Confirm CI green and no duplicate/unsafe boot behavior"
       ],
-      "enabled": false
+      "enabled": false,
+      "source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
+      "source_commit_url": "https://github.com/devchmod/TITAN-CORE/tree/2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
+      "independent_report": "MODDED WARFARE, 2026-11-21: Install and Run Fake Packages up to 13.60 with TitanCore",
+      "review_note": "Upstream release ELF SHA256 metadata present; independent byte download blocked by network DNS in verification environment. No static code audit completed. Do not promote."
     }
   ]
 }
