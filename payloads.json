@@ -122,7 +122,7 @@
     "category": "Utilities & Tools",
     "checksum": "50f074700fc4f427ae87fb2cb986ad07d633ef01799077953817a6ffded7f91d",
     "source": "https://github.com/devchmod/TITAN-CORE/releases",
-    "description": "Verify firmware compatibility before use.",
+    "description": "MANUAL LAUNCH ONLY. Bundles kstuff-lite and ShadowMountPlus; may conflict with an existing jailbreak payload chain. Verify PS5 firmware 13.60 and active services before running.",
     "icon_key": "cc929b77ba1781aa61cdfcead7259ac83387a277e4f26c769afa15c1fcf3702e"
   }
 ]
