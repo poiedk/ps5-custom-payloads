@@ -43,10 +43,27 @@
           "Maintainer explicitly says no new v1.0 hardware acceptance test and no universal firmware/game compatibility",
           "External PKG system storage accounting unresolved",
           "Public report disputes bundled service startup reliability; needs reproduction",
-          "Local verification environment cannot resolve github.com; exact ELF bytes and independent SHA-256 unavailable"
+          "Local verification environment cannot resolve github.com; exact ELF bytes and independent SHA-256 unavailable",
+          "Confirmed upstream CI success for pinned source commit; release asset reproducibility not established"
         ],
         "source_review_scope": "documentation and CI workflow only; no complete static audit or binary verification",
-        "promotion": "BLOCKED"
+        "promotion": "BLOCKED",
+        "upstream_ci": {
+          "source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
+          "runs": [
+            {
+              "id": 43797411832,
+              "conclusion": "success",
+              "url": "https://github.com/devchmod/TITAN-CORE/actions/runs/43797411832"
+            },
+            {
+              "id": 43796992751,
+              "conclusion": "success",
+              "url": "https://github.com/devchmod/TITAN-CORE/actions/runs/43796992751"
+            }
+          ],
+          "note": "Upstream CI success is not DK catalog promotion CI and does not establish ELF provenance or safety."
+        }
       }
     }
   ]
