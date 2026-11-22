@@ -28,7 +28,26 @@
       "source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
       "source_commit_url": "https://github.com/devchmod/TITAN-CORE/tree/2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
       "independent_report": "MODDED WARFARE, 2026-11-21: Install and Run Fake Packages up to 13.60 with TitanCore",
-      "review_note": "Upstream release ELF SHA256 metadata present; independent byte download blocked by network DNS in verification environment. No static code audit completed. Do not promote."
+      "review_note": "Upstream release ELF SHA256 metadata present; independent byte download blocked by network DNS in verification environment. No static code audit completed. Do not promote.",
+      "audit": {
+        "date": "2026-11-22",
+        "pinned_source_commit": "2e1f186a9778eae0976af2cf24d07bfb435d1b7c",
+        "inspected_files": [
+          "docs/V1_0_VALIDATION.md",
+          "vendor/unified/PROVENANCE.md",
+          ".github/workflows/build.yml"
+        ],
+        "findings": [
+          "Upstream documentation claims 104 synthetic Rust tests and two successful ELF build stages; independently unverified",
+          "Pinned vendor kstuff-lite v1.11 and ShadowMountPlus 1.7beta10 are embedded as release binaries, not rebuilt from source",
+          "Maintainer explicitly says no new v1.0 hardware acceptance test and no universal firmware/game compatibility",
+          "External PKG system storage accounting unresolved",
+          "Public report disputes bundled service startup reliability; needs reproduction",
+          "Local verification environment cannot resolve github.com; exact ELF bytes and independent SHA-256 unavailable"
+        ],
+        "source_review_scope": "documentation and CI workflow only; no complete static audit or binary verification",
+        "promotion": "BLOCKED"
+      }
     }
   ]
 }
