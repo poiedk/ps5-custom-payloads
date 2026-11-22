@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "candidates": [
+    {
+      "id": "titan-core",
+      "name": "TITAN CORE",
+      "status": "review_no_go",
+      "repository": "https://github.com/devchmod/TITAN-CORE",
+      "release": "https://github.com/devchmod/TITAN-CORE/releases/tag/v1.0.0",
+      "asset": "TITAN-CORE-v1.0.elf",
+      "asset_pattern": "^TITAN-CORE-v[0-9]+\\.[0-9]+\\.elf$",
+      "upstream_sha256": "50f074700fc4f427ae87fb2cb986ad07d633ef01799077953817a6ffded7f91d",
+      "independent_sha256": null,
+      "firmware": "13.60 developer-reported; independent validation incomplete",
+      "risk_notes": [
+        "Repository created recently (November 2026); provenance and source commit audit pending",
+        "Bundles and automatically loads kstuff-lite and ShadowMountPlus; possible conflict with existing autoload",
+        "Release ELF byte-for-byte independent SHA-256 not verified",
+        "User reports include game compatibility issues"
+      ],
+      "required_before_promotion": [
+        "Pin and audit public source commit and build provenance",
+        "Download exact ELF and independently calculate SHA-256",
+        "Verify firmware 13.60 compatibility and developer identity",
+        "Confirm CI green and no duplicate/unsafe boot behavior"
+      ],
+      "enabled": false
+    }
+  ]
+}
