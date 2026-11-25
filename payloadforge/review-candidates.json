@@ -87,6 +87,34 @@
           "note": "Integrity match does not establish safety, reproducibility, or console compatibility"
         }
       }
+    },
+    {
+      "id": "linux-flasher",
+      "name": "PS5 Linux Flasher",
+      "status": "review_no_go",
+      "enabled": false,
+      "repository": "https://github.com/abrocoma/PS5-Linux-Flasher",
+      "release": "https://github.com/abrocoma/PS5-Linux-Flasher/releases/tag/v1.6.4",
+      "asset": "Linux_Flasher.elf",
+      "asset_pattern": "^Linux_Flasher\\.elf$",
+      "upstream_sha256": "b34346c0ac01cf1888ca48c6253715ea57156988f3f64c2ff4686c312abcacd6",
+      "independent_sha256": null,
+      "firmware": "13.60 claimed by developer on r/ps5homebrew 2026-11-17; independent hardware validation pending",
+      "repository_created": "2026-11-17",
+      "risk_notes": [
+        "New repository and limited developer reputation history",
+        "Release asset SHA-256 independently unverified: download bytes unavailable in current environment",
+        "Writes raw Linux image to USB and erases selected destination; audit flash drive selection, safety and dependencies",
+        "Independent firmware 13.60 test and source-to-release reproducibility not established"
+      ],
+      "source_reference": "https://www.reddit.com/r/ps5homebrew/comments/1xycy9w/release_linux_flasher_flash_linux_to_usb_on_your/",
+      "required_before_promotion": [
+        "Independent hash of exact release ELF",
+        "Pin and audit source commit, dependencies and binary provenance",
+        "Confirm 13.60 compatibility independently and assess USB data loss risk",
+        "Check CI and standalone operation"
+      ],
+      "review_date": "2026-11-23"
     }
   ]
 }
